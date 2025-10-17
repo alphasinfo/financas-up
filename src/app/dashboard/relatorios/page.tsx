@@ -1,0 +1,447 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Printer, Download, TrendingUp, TrendingDown, DollarSign, Filter, X } from "lucide-react";
+import { formatarMoeda } from "@/lib/formatters";
+import { exportarRelatorioParaPDF, baixarPDF } from "@/lib/pdf-export";
+import { TransacaoItem } from "@/components/transacao-item";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Line, Pie } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface DadosRelatorio {
+  receitasMes: number;
+  despesasMes: number;
+  saldoMes: number;
+  receitasPorCategoria: { categoria: string; valor: number }[];
+  despesasPorCategoria: { categoria: string; valor: number }[];
+  evolucaoMensal: { mes: string; receitas: number; despesas: number }[];
+  transacoes?: Array<{
+    id: string;
+    descricao: string;
+    valor: number;
+    tipo: string;
+    status: string;
+    dataCompetencia: string;
+    categoria: { nome: string } | null;
+  }>;
+}
+
+export default function RelatoriosPage() {
+  const [dados, setDados] = useState<DadosRelatorio | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [mesAno, setMesAno] = useState(() => {
+    const hoje = new Date();
+    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+  });
+  
+  // Filtros para transações
+  const [filtroTipo, setFiltroTipo] = useState<string>("TODOS");
+  const [_filtroCategoria, setFiltroCategoria] = useState<string>("TODAS");
+  const [filtroStatus, setFiltroStatus] = useState<string>("TODOS");
+  const [filtroBusca, setFiltroBusca] = useState<string>("");
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
+  const carregarDados = useCallback(async () => {
+    try {
+      const resposta = await fetch(`/api/relatorios?mesAno=${mesAno}`, { cache: 'no-store' });
+      if (resposta.ok) {
+        const dadosCarregados = await resposta.json();
+        setDados(dadosCarregados);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar relatórios:", error);
+    } finally {
+      setCarregando(false);
+    }
+  }, [mesAno]);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  const handleImprimir = () => {
+    window.print();
+  };
+
+  const handleExportarPDF = () => {
+    if (!dados || !dados.transacoes) {
+      alert("Nenhum dado disponível para exportar");
+      return;
+    }
+
+    const [ano, mes] = mesAno.split("-");
+    const nomeMes = new Date(parseInt(ano), parseInt(mes) - 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+    const transacoesPDF = dados.transacoes.map((t) => ({
+      data: new Date(t.dataCompetencia),
+      descricao: t.descricao,
+      categoria: t.categoria?.nome || "Sem categoria",
+      tipo: t.tipo,
+      valor: t.valor,
+      status: t.status,
+    }));
+
+    const dadosPDF = {
+      periodo: nomeMes,
+      receitas: dados.receitasMes,
+      despesas: dados.despesasMes,
+      saldo: dados.saldoMes,
+      transacoes: transacoesPDF,
+    };
+
+    const doc = exportarRelatorioParaPDF(dadosPDF);
+    baixarPDF(doc, `relatorio-${mesAno}.pdf`);
+  };
+
+  if (carregando || !dados) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-gray-500">Carregando relatórios...</p>
+      </div>
+    );
+  }
+
+  // Dados para gráfico de receitas vs despesas
+  const dadosReceitasDespesas = {
+    labels: ["Receitas", "Despesas"],
+    datasets: [
+      {
+        label: "Valor (R$)",
+        data: [dados.receitasMes, dados.despesasMes],
+        backgroundColor: ["rgba(16, 185, 129, 0.5)", "rgba(239, 68, 68, 0.5)"],
+        borderColor: ["rgb(16, 185, 129)", "rgb(239, 68, 68)"],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Dados para gráfico de categorias de despesas
+  const dadosDespesasPorCategoria = {
+    labels: dados.despesasPorCategoria.map((d) => d.categoria),
+    datasets: [
+      {
+        data: dados.despesasPorCategoria.map((d) => d.valor),
+        backgroundColor: [
+          "rgba(239, 68, 68, 0.5)",
+          "rgba(245, 158, 11, 0.5)",
+          "rgba(139, 92, 246, 0.5)",
+          "rgba(16, 185, 129, 0.5)",
+          "rgba(236, 72, 153, 0.5)",
+        ],
+        borderColor: [
+          "rgb(239, 68, 68)",
+          "rgb(245, 158, 11)",
+          "rgb(139, 92, 246)",
+          "rgb(16, 185, 129)",
+          "rgb(236, 72, 153)",
+        ],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Dados para gráfico de evolução mensal
+  const dadosEvolucaoMensal = {
+    labels: dados.evolucaoMensal.map((d) => d.mes),
+    datasets: [
+      {
+        label: "Receitas",
+        data: dados.evolucaoMensal.map((d) => d.receitas),
+        borderColor: "rgb(16, 185, 129)",
+        backgroundColor: "rgba(16, 185, 129, 0.5)",
+        tension: 0.3,
+      },
+      {
+        label: "Despesas",
+        data: dados.evolucaoMensal.map((d) => d.despesas),
+        borderColor: "rgb(239, 68, 68)",
+        backgroundColor: "rgba(239, 68, 68, 0.5)",
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const opcoes = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top" as const,
+      },
+    },
+  };
+
+  return (
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Relatórios</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">
+            Análise completa das suas finanças
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 no-print w-full sm:w-auto">
+          <input
+            type="month"
+            value={mesAno}
+            onChange={(e) => setMesAno(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          />
+          <Button variant="outline" onClick={handleImprimir} className="w-full sm:w-auto">
+            <Printer className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Imprimir</span>
+            <span className="sm:hidden">Imprimir</span>
+          </Button>
+          <Button variant="outline" onClick={handleExportarPDF} className="w-full sm:w-auto">
+            <Download className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Exportar PDF</span>
+            <span className="sm:hidden">PDF</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Cards de Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 print-area">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              Receitas do Período
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <p className="text-xl md:text-2xl font-bold text-green-600">
+              {formatarMoeda(dados.receitasMes)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              Despesas do Período
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-red-600">
+              {formatarMoeda(dados.despesasMes)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Saldo do Período
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p
+              className={`text-2xl font-bold ${
+                dados.saldoMes >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {formatarMoeda(dados.saldoMes)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Abas com Gráficos */}
+      <Tabs defaultValue="geral" className="space-y-4">
+        <TabsList className="no-print">
+          <TabsTrigger value="geral">Geral</TabsTrigger>
+          <TabsTrigger value="categorias">Por Categoria</TabsTrigger>
+          <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+          <TabsTrigger value="transacoes">Transações</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="geral" className="space-y-4">
+          <Card className="print-area">
+            <CardHeader>
+              <CardTitle>Receitas vs Despesas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Bar data={dadosReceitasDespesas} options={opcoes} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="categorias" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+            <Card className="print-area">
+              <CardHeader>
+                <CardTitle>Despesas por Categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Pie data={dadosDespesasPorCategoria} options={opcoes} />
+              </CardContent>
+            </Card>
+
+            <Card className="print-area">
+              <CardHeader>
+                <CardTitle>Detalhamento de Despesas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {dados.despesasPorCategoria.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <span className="font-medium">{item.categoria}</span>
+                      <span className="text-red-600 font-bold">
+                        {formatarMoeda(item.valor)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="evolucao" className="space-y-4">
+          <Card className="print-area">
+            <CardHeader>
+              <CardTitle>Evolução Mensal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Line data={dadosEvolucaoMensal} options={opcoes} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="transacoes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <CardTitle>Lista Completa de Transações</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {mostrarFiltros ? "Ocultar" : "Mostrar"} Filtros
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Filtros */}
+              {mostrarFiltros && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label>Buscar</Label>
+                    <Input
+                      placeholder="Descrição..."
+                      value={filtroBusca}
+                      onChange={(e) => setFiltroBusca(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo</Label>
+                    <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos</SelectItem>
+                        <SelectItem value="RECEITA">Receitas</SelectItem>
+                        <SelectItem value="DESPESA">Despesas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos</SelectItem>
+                        <SelectItem value="PENDENTE">Pendente</SelectItem>
+                        <SelectItem value="PAGO">Pago</SelectItem>
+                        <SelectItem value="RECEBIDO">Recebido</SelectItem>
+                        <SelectItem value="VENCIDO">Vencido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>&nbsp;</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setFiltroTipo("TODOS");
+                        setFiltroCategoria("TODAS");
+                        setFiltroStatus("TODOS");
+                        setFiltroBusca("");
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de Transações */}
+              <div className="space-y-3">
+                {dados.transacoes && dados.transacoes.length > 0 ? (
+                  dados.transacoes
+                    .filter((t) => {
+                      // Filtro por tipo
+                      if (filtroTipo !== "TODOS" && t.tipo !== filtroTipo) return false;
+                      // Filtro por status
+                      if (filtroStatus !== "TODOS" && t.status !== filtroStatus) return false;
+                      // Filtro por busca
+                      if (filtroBusca && !t.descricao.toLowerCase().includes(filtroBusca.toLowerCase())) return false;
+                      return true;
+                    })
+                    .map((transacao) => (
+                      <TransacaoItem key={transacao.id} transacao={transacao} />
+                    ))
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Nenhuma transação encontrada</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

@@ -1,0 +1,431 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================
+// CONFIGURAÇÃO DO BANCO DE DADOS
+// ============================================
+// 
+// Para DESENVOLVIMENTO LOCAL (SQLite):
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+// .env: DATABASE_URL="file:./dev.db"
+//
+// Para PRODUÇÃO (PostgreSQL/Supabase):
+// Altere provider para "postgresql" quando for usar Supabase
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+// .env: DATABASE_URL="postgresql://..."
+//
+// ============================================
+
+// ============================================
+// AUTENTICAÇÃO E USUÁRIO
+// ============================================
+
+model Usuario {
+  id            String    @id @default(cuid())
+  nome          String
+  email         String    @unique
+  senha         String?
+  imagem        String?
+  logo          String?
+  criadoEm      DateTime  @default(now())
+  atualizadoEm  DateTime  @updatedAt
+  
+  // Configurações de relatório por email
+  enviarRelatorioEmail    Boolean  @default(false)
+  diaEnvioRelatorio       Int?     // 1-31
+  ultimoEnvioRelatorio    DateTime?
+  
+  // Configurações de notificações
+  notificacaoEmail        Boolean  @default(true)
+  notificacaoVencimento   Boolean  @default(true)
+  notificacaoOrcamento    Boolean  @default(true)
+  
+  // Configurações SMTP (Gmail/Outlook)
+  smtpProvider            String?  // "gmail", "outlook", "resend"
+  smtpEmail               String?
+  smtpPassword            String?  // Criptografada
+  smtpHost                String?
+  smtpPort                Int?
+  smtpNome                String?  // Nome do remetente
+
+  // Relacionamentos
+  contas        ContaBancaria[]
+  cartoes       CartaoCredito[]
+  transacoes    Transacao[]
+  emprestimos   Emprestimo[]
+  investimentos Investimento[]
+  orcamentos    Orcamento[]
+  metas         Meta[]
+  categorias    Categoria[]
+  
+  // Compartilhamento
+  compartilhamentosRecebidos CompartilhamentoConta[] @relation("compartilhamentos_recebidos")
+  compartilhamentosCriados   CompartilhamentoConta[] @relation("compartilhamentos_criados")
+  convites                   ConviteCompartilhamento[]
+  logsAcesso                 LogAcesso[]
+  conciliacoes  Conciliacao[]
+
+  @@map("usuarios")
+}
+
+// ============================================
+// CATEGORIAS
+// ============================================
+
+model Categoria {
+  id          String   @id @default(cuid())
+  nome        String
+  tipo        String   // "RECEITA" ou "DESPESA"
+  cor         String?
+  icone       String?
+  usuarioId   String
+  criadoEm    DateTime @default(now())
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  transacoes  Transacao[]
+  orcamentos  Orcamento[]
+
+  @@map("categorias")
+}
+
+// ============================================
+// CONTAS BANCÁRIAS
+// ============================================
+
+model ContaBancaria {
+  id                String   @id @default(cuid())
+  nome              String
+  instituicao       String
+  agencia           String?
+  numero            String?
+  tipo              String   // "CORRENTE", "POUPANCA", "CARTEIRA"
+  saldoInicial      Float    @default(0)
+  saldoAtual        Float    @default(0)
+  saldoDisponivel   Float    @default(0)
+  temLimiteCredito  Boolean  @default(false)
+  limiteCredito     Float    @default(0)
+  cor               String?
+  ativa             Boolean  @default(true)
+  usuarioId         String
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  usuario           Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  transacoes        Transacao[]
+  pagamentosFatura  PagamentoFatura[]
+  compartilhamentos CompartilhamentoConta[]
+
+  @@map("contas_bancarias")
+}
+
+// ============================================
+// CARTÕES DE CRÉDITO
+// ============================================
+
+model CartaoCredito {
+  id                String   @id @default(cuid())
+  nome              String
+  banco             String
+  bandeira          String   // "VISA", "MASTERCARD", "ELO", etc.
+  apelido           String?
+  numeroMascara     String?  // últimos 4 dígitos
+  limiteTotal       Float
+  limiteDisponivel  Float
+  diaFechamento     Int      // 1-31
+  diaVencimento     Int      // 1-31
+  cor               String?
+  ativo             Boolean  @default(true)
+  usuarioId         String
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  usuario           Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  faturas           Fatura[]
+  transacoes        Transacao[]
+
+  @@map("cartoes_credito")
+}
+
+// ============================================
+// FATURAS DE CARTÃO
+// ============================================
+
+model Fatura {
+  id              String   @id @default(cuid())
+  cartaoId        String
+  mesReferencia   Int      // 1-12
+  anoReferencia   Int
+  dataFechamento  DateTime
+  dataVencimento  DateTime
+  valorTotal      Float    @default(0)
+  valorPago       Float    @default(0)
+  status          String   @default("ABERTA") // "ABERTA", "FECHADA", "PAGA", "VENCIDA"
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  cartao          CartaoCredito     @relation(fields: [cartaoId], references: [id], onDelete: Cascade)
+  transacoes      Transacao[]
+  pagamentos      PagamentoFatura[]
+
+  @@unique([cartaoId, mesReferencia, anoReferencia])
+  @@map("faturas")
+}
+
+// ============================================
+// PAGAMENTOS DE FATURA
+// ============================================
+
+model PagamentoFatura {
+  id              String   @id @default(cuid())
+  faturaId        String
+  contaBancariaId String?
+  emprestimoId    String?
+  valor           Float
+  dataPagamento   DateTime
+  criadoEm        DateTime @default(now())
+
+  fatura          Fatura         @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+  contaBancaria   ContaBancaria? @relation(fields: [contaBancariaId], references: [id])
+  emprestimo      Emprestimo?    @relation(fields: [emprestimoId], references: [id])
+
+  @@map("pagamentos_fatura")
+}
+
+// ============================================
+// TRANSAÇÕES (RECEITAS E DESPESAS)
+// ============================================
+
+model Transacao {
+  id                String    @id @default(cuid())
+  tipo              String    // "RECEITA", "DESPESA", "TRANSFERENCIA"
+  descricao         String
+  valor             Float
+  dataCompetencia   DateTime  // data da transação
+  dataLiquidacao    DateTime? // data efetiva de pagamento/recebimento
+  status            String    @default("PENDENTE") // "PENDENTE", "PAGO", "RECEBIDO", "VENCIDO", "CANCELADO"
+  
+  // Parcelamento
+  parcelado         Boolean   @default(false)
+  parcelaAtual      Int?
+  parcelaTotal      Int?
+  
+  // Relacionamentos
+  categoriaId       String?
+  contaBancariaId   String?
+  cartaoCreditoId   String?
+  faturaId          String?
+  usuarioId         String
+  
+  observacoes       String?
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+
+  usuario           Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria         Categoria?      @relation(fields: [categoriaId], references: [id])
+  contaBancaria     ContaBancaria?  @relation(fields: [contaBancariaId], references: [id])
+  cartaoCredito     CartaoCredito?  @relation(fields: [cartaoCreditoId], references: [id])
+  fatura            Fatura?         @relation(fields: [faturaId], references: [id])
+
+  @@map("transacoes")
+}
+
+// ============================================
+// EMPRÉSTIMOS
+// ============================================
+
+model Emprestimo {
+  id                String   @id @default(cuid())
+  instituicao       String
+  descricao         String?
+  valorTotal        Float
+  valorParcela      Float
+  numeroParcelas    Int
+  parcelasPagas     Int      @default(0)
+  taxaJurosMensal   Float?   // Taxa de juros ao mês (%)
+  taxaJurosAnual    Float?   // Taxa de juros ao ano (%)
+  sistemaAmortizacao String  @default("PRICE") // "PRICE" ou "SAC"
+  dataContratacao   DateTime
+  diaVencimento     Int      // 1-31
+  status            String   @default("ATIVO") // "ATIVO", "QUITADO", "ATRASADO"
+  usuarioId         String
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  parcelas          ParcelaEmprestimo[]
+  pagamentosFatura  PagamentoFatura[]
+
+  @@map("emprestimos")
+}
+
+model ParcelaEmprestimo {
+  id              String    @id @default(cuid())
+  emprestimoId    String
+  numeroParcela   Int
+  numero          Int       // Número da parcela (1, 2, 3...)
+  valor           Float     // Valor total da parcela
+  valorAmortizacao Float    // Valor da amortização (principal)
+  valorJuros      Float     // Valor dos juros
+  saldoDevedor    Float     // Saldo devedor após esta parcela
+  dataVencimento  DateTime
+  dataPagamento   DateTime?
+  status          String    @default("PENDENTE") // "PENDENTE", "PAGO", "VENCIDO"
+  criadoEm        DateTime  @default(now())
+
+  emprestimo      Emprestimo @relation(fields: [emprestimoId], references: [id], onDelete: Cascade)
+
+  @@unique([emprestimoId, numeroParcela])
+  @@map("parcelas_emprestimo")
+}
+
+// ============================================
+// INVESTIMENTOS
+// ============================================
+
+model Investimento {
+  id              String   @id @default(cuid())
+  nome            String
+  tipo            String   // "RENDA_FIXA", "RENDA_VARIAVEL", "FUNDO", "TESOURO", etc.
+  valorAplicado   Float
+  valorAtual      Float?
+  taxaRendimento  Float?
+  dataAplicacao   DateTime
+  dataVencimento  DateTime?
+  instituicao     String?
+  observacoes     String?
+  usuarioId       String
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("investimentos")
+}
+
+// ============================================
+// ORÇAMENTOS
+// ============================================
+
+model Orcamento {
+  id              String   @id @default(cuid())
+  nome            String
+  categoriaId     String?
+  valorLimite     Float
+  valorGasto      Float    @default(0)
+  mesReferencia   Int      // 1-12
+  anoReferencia   Int
+  usuarioId       String
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  usuario         Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria       Categoria? @relation(fields: [categoriaId], references: [id])
+
+  @@map("orcamentos")
+}
+
+// ============================================
+// METAS
+// ============================================
+
+model Meta {
+  id              String    @id @default(cuid())
+  titulo          String
+  descricao       String?
+  valorAlvo       Float
+  valorAtual      Float     @default(0)
+  dataInicio      DateTime
+  dataPrazo       DateTime?
+  status          String    @default("EM_ANDAMENTO") // "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"
+  usuarioId       String
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("metas")
+}
+
+// ============================================
+// CONCILIAÇÃO
+// ============================================
+
+model Conciliacao {
+  id              String   @id @default(cuid())
+  tipo            String   // "OFX", "CNAB", "XML", "CSV"
+  nomeArquivo     String
+  dataImportacao  DateTime @default(now())
+  registrosTotal  Int
+  registrosNovos  Int
+  registrosDuplicados Int
+  status          String   @default("PROCESSADO") // "PROCESSADO", "ERRO"
+  usuarioId       String
+
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("conciliacoes")
+}
+
+// ============================================
+// COMPARTILHAMENTO E MÚLTIPLOS USUÁRIOS
+// ============================================
+
+model CompartilhamentoConta {
+  id              String   @id @default(cuid())
+  contaId         String
+  usuarioId       String   // Usuário com quem foi compartilhado
+  permissao       String   @default("VISUALIZAR") // "VISUALIZAR", "EDITAR", "ADMIN"
+  criadoPor       String   // ID do usuário que compartilhou
+  criadoEm        DateTime @default(now())
+  ativo           Boolean  @default(true)
+
+  conta           ContaBancaria @relation(fields: [contaId], references: [id], onDelete: Cascade)
+  usuario         Usuario  @relation("compartilhamentos_recebidos", fields: [usuarioId], references: [id], onDelete: Cascade)
+  criador         Usuario  @relation("compartilhamentos_criados", fields: [criadoPor], references: [id], onDelete: Cascade)
+
+  @@unique([contaId, usuarioId])
+  @@map("compartilhamentos_conta")
+}
+
+model ConviteCompartilhamento {
+  id              String   @id @default(cuid())
+  email           String
+  tipo            String   // "CONTA", "CARTAO", "SISTEMA"
+  recursoId       String?  // ID da conta/cartão (null para sistema completo)
+  permissao       String   @default("VISUALIZAR")
+  token           String   @unique
+  criadoPor       String
+  criadoEm        DateTime @default(now())
+  expiraEm        DateTime
+  aceito          Boolean  @default(false)
+  aceitoEm        DateTime?
+
+  criador         Usuario  @relation(fields: [criadoPor], references: [id], onDelete: Cascade)
+
+  @@map("convites_compartilhamento")
+}
+
+model LogAcesso {
+  id              String   @id @default(cuid())
+  usuarioId       String
+  acao            String   // "LOGIN", "LOGOUT", "CRIAR", "EDITAR", "EXCLUIR", "VISUALIZAR"
+  recurso         String?  // "TRANSACAO", "CONTA", "CARTAO", etc
+  recursoId       String?
+  ip              String?
+  userAgent       String?
+  criadoEm        DateTime @default(now())
+
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("logs_acesso")
+}
