@@ -5,6 +5,14 @@ import { compare } from 'bcryptjs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  // 🔒 SEGURANÇA: Bloquear em produção
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { erro: 'Not found' },
+      { status: 404 }
+    );
+  }
+
   try {
     const { email, senha } = await request.json();
 

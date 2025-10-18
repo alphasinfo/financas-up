@@ -129,8 +129,8 @@ export const authOptions: AuthOptions = {
   jwt: {
     maxAge: 90 * 24 * 60 * 60, // 90 dias
   },
-  // Debug em produção
-  debug: true,
+  // Debug apenas em desenvolvimento
+  debug: process.env.NODE_ENV === 'development',
   // Configurações de eventos para debug
   events: {
     async signIn(message) {
