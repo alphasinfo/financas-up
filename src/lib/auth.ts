@@ -6,7 +6,9 @@ import { compare } from "bcryptjs";
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "Credenciais",
+      type: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         senha: { label: "Senha", type: "password" },
