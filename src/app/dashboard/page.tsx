@@ -26,7 +26,7 @@ async function getDashboardData(usuarioId: string) {
   fimMes.setDate(0);
   fimMes.setHours(23, 59, 59, 999);
 
-  const [contas, cartoes, transacoesMes, metas, emprestimos, orcamentos, investimentos] = await Promise.all([
+  const [contas, cartoes, transacoesMes, transacoesCartao, metas, emprestimos, orcamentos, investimentos] = await Promise.all([
     prisma.contaBancaria.findMany({
       where: { usuarioId, ativa: true },
       select: { saldoAtual: true, temLimiteCredito: true, limiteCredito: true },
@@ -41,6 +41,15 @@ async function getDashboardData(usuarioId: string) {
         dataCompetencia: { gte: inicioMes, lte: fimMes },
       },
       select: { tipo: true, status: true, valor: true },
+    }),
+    // Buscar transações de cartão em paralelo
+    prisma.transacao.findMany({
+      where: {
+        usuarioId,
+        cartaoCreditoId: { not: null },
+        dataCompetencia: { gte: inicioMes, lte: fimMes },
+      },
+      select: { valor: true },
     }),
     prisma.meta.findMany({
       where: { usuarioId },
@@ -80,21 +89,7 @@ async function getDashboardData(usuarioId: string) {
   const limiteDisponivel = cartoes.reduce((acc: number, cartao: any) => acc + cartao.limiteDisponivel, 0);
   const limiteUtilizado = limiteTotal - limiteDisponivel;
 
-  // Buscar transações de cartão do mês atual (parcelas)
-  const transacoesCartao = await prisma.transacao.findMany({
-    where: {
-      usuarioId,
-      cartaoCreditoId: { not: null },
-      dataCompetencia: {
-        gte: inicioMes,
-        lte: fimMes,
-      },
-    },
-    select: {
-      valor: true,
-    },
-  });
-
+  // Calcular total de parcelas de cartão (já buscado no Promise.all)
   const totalParcelasCartao = transacoesCartao.reduce((acc: number, t: any) => acc + t.valor, 0);
 
   const receitasMes = transacoesMes

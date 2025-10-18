@@ -48,8 +48,26 @@ export async function GET() {
       }),
       prisma.transacao.findMany({
         where: { usuarioId: session.user.id },
-        include: {
-          categoria: true,
+        take: 5000, // Limite para evitar timeout
+        orderBy: { dataCompetencia: 'desc' },
+        select: {
+          id: true,
+          descricao: true,
+          valor: true,
+          tipo: true,
+          status: true,
+          dataCompetencia: true,
+          dataLiquidacao: true,
+          parcelado: true,
+          parcelaAtual: true,
+          parcelaTotal: true,
+          categoria: {
+            select: {
+              nome: true,
+              tipo: true,
+              cor: true,
+            },
+          },
         },
       }),
       prisma.categoria.findMany({
