@@ -82,11 +82,22 @@ export async function POST(
     for (let i = 0; i < parcelasAPagar; i++) {
       const numeroParcela = emprestimo.parcelasPagas + i + 1;
       
+      // Calcular valores da parcela (simplificado - pode ser melhorado com cálculo real de juros)
+      const valorJuros = emprestimo.taxaJurosMensal 
+        ? (emprestimo.valorTotal * (emprestimo.taxaJurosMensal / 100))
+        : 0;
+      const valorAmortizacao = emprestimo.valorParcela - valorJuros;
+      const saldoDevedor = emprestimo.valorTotal - (valorAmortizacao * numeroParcela);
+      
       await prisma.parcelaEmprestimo.create({
         data: {
           emprestimoId,
           numeroParcela,
+          numero: numeroParcela,
           valor: emprestimo.valorParcela,
+          valorAmortizacao,
+          valorJuros,
+          saldoDevedor: saldoDevedor > 0 ? saldoDevedor : 0,
           dataVencimento: dados.dataPagamento,
           dataPagamento: dados.dataPagamento,
           status: "PAGO",
