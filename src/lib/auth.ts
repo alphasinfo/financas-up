@@ -68,9 +68,11 @@ export const authOptions: AuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
+        console.log('✅ JWT callback - Adicionando user ao token:', user.email);
         token.id = user.id;
+        token.email = user.email;
         // Armazenar timestamp de criação do token
         if (!token.createdAt) {
           token.createdAt = Date.now();
@@ -79,10 +81,16 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log('✅ Session callback - Criando sessão para:', token.email);
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.email = token.email as string;
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      console.log('✅ SignIn callback - Usuário autenticado:', user.email);
+      return true; // Permitir login
     },
   },
   cookies: {
@@ -120,5 +128,22 @@ export const authOptions: AuthOptions = {
   // Aumentar o tempo de vida do JWT
   jwt: {
     maxAge: 90 * 24 * 60 * 60, // 90 dias
+  },
+  // Debug em produção
+  debug: true,
+  // Configurações de eventos para debug
+  events: {
+    async signIn(message) {
+      console.log('🎉 Evento signIn:', message.user.email);
+    },
+    async signOut(message) {
+      console.log('👋 Evento signOut');
+    },
+    async createUser(message) {
+      console.log('👤 Evento createUser:', message.user.email);
+    },
+    async session(message) {
+      console.log('📝 Evento session:', message.session.user?.email);
+    },
   },
 };
