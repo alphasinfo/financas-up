@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, DollarSign, Filter, CreditCard, PiggyBank } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { TransacaoItem } from "@/components/transacao-item";
 
 // Desabilitar cache para sempre buscar dados atualizados
@@ -66,7 +67,11 @@ async function getTransacoes(usuarioId: string) {
 
 export default async function FinanceiroPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const dados = await getTransacoes(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const dados = await getTransacoes(session.user.id);
 
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">

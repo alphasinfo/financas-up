@@ -33,7 +33,11 @@ export default async function EmprestimoDetalhesPage({
   params: { id: string };
 }) {
   const session = await getServerSession(authOptions) as Session | null;
-  const emprestimo = await getEmprestimo(params.id, session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const emprestimo = await getEmprestimo(params.id, session.user.id);
 
   if (!emprestimo) {
     notFound();

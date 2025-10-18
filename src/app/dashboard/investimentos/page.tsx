@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, TrendingUp, PieChart, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 async function getInvestimentos(usuarioId: string) {
   return await prisma.investimento.findMany({
@@ -18,7 +19,11 @@ async function getInvestimentos(usuarioId: string) {
 
 export default async function InvestimentosPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const investimentos = await getInvestimentos(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const investimentos = await getInvestimentos(session.user.id);
 
   const totalInvestido = investimentos.reduce(
     (acc, inv) => acc + inv.valorAplicado,

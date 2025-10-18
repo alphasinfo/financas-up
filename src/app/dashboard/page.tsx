@@ -8,6 +8,7 @@ import { Wallet, CreditCard, TrendingUp, TrendingDown, DollarSign, Target, Plus,
 import { DashboardGraficosAbas } from "@/components/dashboard-graficos-abas";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 // Desabilitar cache para sempre buscar dados atualizados
 export const dynamic = 'force-dynamic';
@@ -231,7 +232,11 @@ async function getDashboardData(usuarioId: string) {
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const dados = await getDashboardData(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const dados = await getDashboardData(session.user.id);
 
   const cards = [
     {

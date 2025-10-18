@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Target, CheckCircle2, Clock, PiggyBank, TrendingUp, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 async function getMetas(usuarioId: string) {
   return await prisma.meta.findMany({
@@ -18,7 +19,11 @@ async function getMetas(usuarioId: string) {
 
 export default async function MetasPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const metas = await getMetas(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const metas = await getMetas(session.user.id);
 
   const metasAtivas = metas.filter((m) => m.status === "EM_ANDAMENTO");
   const metasConcluidas = metas.filter((m) => m.status === "CONCLUIDA");

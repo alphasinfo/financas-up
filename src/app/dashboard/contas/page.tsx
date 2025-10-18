@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Wallet, Building2, DollarSign } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 // Forçar revalidação a cada requisição
 export const revalidate = 0;
@@ -22,7 +23,11 @@ async function getContas(usuarioId: string) {
 
 export default async function ContasPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const contas = await getContas(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const contas = await getContas(session.user.id);
 
   const totalSaldo = contas
     .filter((c) => c.ativa)

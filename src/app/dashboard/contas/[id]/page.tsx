@@ -84,7 +84,11 @@ export default async function ContaDetalhesPage({
   params: { id: string };
 }) {
   const session = await getServerSession(authOptions) as Session | null;
-  const dados = await getContaDetalhes(params.id, session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const dados = await getContaDetalhes(params.id, session.user.id);
 
   if (!dados) {
     notFound();

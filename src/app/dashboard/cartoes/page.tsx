@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 // Forçar revalidação a cada requisição
 export const revalidate = 0;
@@ -53,7 +54,11 @@ async function getCartoes(usuarioId: string) {
 
 export default async function CartoesPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const cartoes = await getCartoes(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const cartoes = await getCartoes(session.user.id);
 
   const limiteTotal = cartoes
     .filter((c) => c.ativo)

@@ -96,7 +96,12 @@ export default async function CartaoDetalhesPage({
   params: { id: string };
 }) {
   const session = await getServerSession(authOptions) as Session | null;
-  const dados = await getCartaoDetalhes(params.id, session?.user.id);
+  
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const dados = await getCartaoDetalhes(params.id, session.user.id);
 
   if (!dados) {
     notFound();

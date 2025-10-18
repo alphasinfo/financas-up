@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, PiggyBank, AlertTriangle, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 async function getOrcamentos(usuarioId: string) {
   const hoje = new Date();
@@ -29,7 +30,11 @@ async function getOrcamentos(usuarioId: string) {
 
 export default async function OrcamentosPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const orcamentos = await getOrcamentos(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const orcamentos = await getOrcamentos(session.user.id);
 
   const totalLimite = orcamentos.reduce((acc, orc) => acc + orc.valorLimite, 0);
   const totalGasto = orcamentos.reduce((acc, orc) => acc + orc.valorGasto, 0);

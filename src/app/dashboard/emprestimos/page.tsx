@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, TrendingDown, AlertCircle, HandCoins, PieChart, Calendar, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 async function getEmprestimos(usuarioId: string) {
   return await prisma.emprestimo.findMany({
@@ -23,7 +24,11 @@ async function getEmprestimos(usuarioId: string) {
 
 export default async function EmprestimosPage() {
   const session = await getServerSession(authOptions) as Session | null;
-  const emprestimos = await getEmprestimos(session?.user.id);
+  if (!session || !session.user) {
+    notFound();
+  }
+
+  const   const emprestimos = await getEmprestimos(session.user.id);
 
   const totalEmprestado = emprestimos
     .filter((e) => e.status === "ATIVO")
