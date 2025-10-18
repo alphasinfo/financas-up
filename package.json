@@ -25,8 +25,8 @@
     "adicionar-limite-credito": "tsx scripts/adicionar-limite-credito.ts",
     "recalcular-faturas": "tsx scripts/recalcular-faturas.ts",
     "corrigir-datas-faturas": "tsx scripts/corrigir-datas-faturas.ts",
-    "db:local": "node scripts/alternar-db.js local",
-    "db:supabase": "node scripts/alternar-db.js supabase",
+    "db:local": "node scripts/utils/alternar-db.js local",
+    "db:supabase": "node scripts/utils/alternar-db.js supabase",
     "resetar-senhas-supabase": "tsx scripts/resetar-senhas-supabase.ts"
   },
   "prisma": {

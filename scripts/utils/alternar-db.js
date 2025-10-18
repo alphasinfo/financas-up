@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
+const schemaPath = path.join(__dirname, '..', '..', 'prisma', 'schema.prisma');
 const modo = process.argv[2]; // 'local' ou 'supabase'
 
 if (!modo || !['local', 'supabase'].includes(modo)) {
