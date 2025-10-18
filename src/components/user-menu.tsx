@@ -28,8 +28,18 @@ export function UserMenu() {
     };
   }, [isOpen]);
 
-  const handleLogout = () => {
-    window.location.href = "/api/auth/signout";
+  const handleLogout = async () => {
+    try {
+      // Logout direto sem página de confirmação
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      window.location.href = "/login";
+    }
   };
 
   return (

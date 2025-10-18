@@ -26,25 +26,41 @@ export function Notificacoes() {
   const [notificacaoSelecionada, setNotificacaoSelecionada] = useState<Notificacao | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const carregarNotificacoes = async () => {
+      if (!aberto || !isMounted) return;
+      
+      setCarregando(true);
+      try {
+        const resposta = await fetch("/api/notificacoes", {
+          signal: abortController.signal,
+        });
+        if (resposta.ok && isMounted) {
+          const dados = await resposta.json();
+          setNotificacoes(dados);
+        }
+      } catch (error: any) {
+        if (error.name !== 'AbortError' && isMounted) {
+          console.error("Erro ao carregar notificações:", error);
+        }
+      } finally {
+        if (isMounted) {
+          setCarregando(false);
+        }
+      }
+    };
+
     if (aberto) {
       carregarNotificacoes();
     }
-  }, [aberto]);
 
-  const carregarNotificacoes = async () => {
-    setCarregando(true);
-    try {
-      const resposta = await fetch("/api/notificacoes");
-      if (resposta.ok) {
-        const dados = await resposta.json();
-        setNotificacoes(dados);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar notificações:", error);
-    } finally {
-      setCarregando(false);
-    }
-  };
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [aberto]);
 
   const marcarComoLida = async (id: string) => {
     try {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS, getClientIdentifier } from "@/lib/rate-limit";
 
 const cadastroSchema = z.object({
   nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -11,6 +12,24 @@ const cadastroSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const identifier = getClientIdentifier(request);
+    const rateLimitResult = rateLimit(identifier, RATE_LIMITS.PUBLIC);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { erro: "Muitas tentativas. Tente novamente em alguns minutos." },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+          }
+        }
+      );
+    }
+
     const body = await request.json();
     
     const validacao = cadastroSchema.safeParse(body);

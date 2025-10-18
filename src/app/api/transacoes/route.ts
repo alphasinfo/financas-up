@@ -42,10 +42,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
-    // Filtros opcionais de data (para calendário)
+    // Filtros opcionais de data (para calendário) e paginação
     const { searchParams } = new URL(request.url);
     const dataInicio = searchParams.get('dataInicio');
     const dataFim = searchParams.get('dataFim');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
 
     const where: any = { usuarioId: session.user.id };
 
@@ -57,17 +60,60 @@ export async function GET(request: Request) {
       };
     }
 
-    const transacoes = await prisma.transacao.findMany({
-      where,
-      orderBy: { dataCompetencia: "desc" },
-      include: {
-        categoria: true,
-        contaBancaria: true,
-        cartaoCredito: true,
+    // Buscar transações com paginação
+    const [transacoes, total] = await Promise.all([
+      prisma.transacao.findMany({
+        where,
+        orderBy: { dataCompetencia: "desc" },
+        take: limit,
+        skip,
+        select: {
+          id: true,
+          tipo: true,
+          descricao: true,
+          valor: true,
+          dataCompetencia: true,
+          dataLiquidacao: true,
+          status: true,
+          parcelado: true,
+          parcelaAtual: true,
+          parcelaTotal: true,
+          observacoes: true,
+          categoria: {
+            select: {
+              id: true,
+              nome: true,
+              tipo: true,
+              cor: true,
+            },
+          },
+          contaBancaria: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          cartaoCredito: {
+            select: {
+              id: true,
+              nome: true,
+              bandeira: true,
+            },
+          },
+        },
+      }),
+      prisma.transacao.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      transacoes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
-
-    return NextResponse.json(transacoes);
   } catch (error: any) {
     if (process.env.NODE_ENV === 'development') {
       console.error("Erro ao buscar transações:", error);

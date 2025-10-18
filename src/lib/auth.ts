@@ -43,8 +43,8 @@ export const authOptions: AuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 90 * 24 * 60 * 60, // 90 dias para garantir persistência
-    updateAge: 24 * 60 * 60, // Atualiza a cada 24 horas
+    maxAge: 365 * 24 * 60 * 60, // 1 ano para PWA
+    updateAge: 7 * 24 * 60 * 60, // Atualiza a cada 7 dias
   },
   pages: {
     signIn: "/login",
@@ -75,7 +75,7 @@ export const authOptions: AuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 90 * 24 * 60 * 60, // 90 dias
+        maxAge: 365 * 24 * 60 * 60, // 1 ano para PWA
       }
     },
     callbackUrl: {
