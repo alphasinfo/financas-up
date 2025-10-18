@@ -19,8 +19,6 @@ import {
   Sparkles,
   Menu,
   X,
-  Share2,
-  Activity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -84,16 +82,6 @@ const menuItems = [
     titulo: "Insights IA",
     href: "/dashboard/insights",
     icone: Sparkles,
-  },
-  {
-    titulo: "Compartilhamento",
-    href: "/dashboard/compartilhamento",
-    icone: Share2,
-  },
-  {
-    titulo: "Logs",
-    href: "/dashboard/logs",
-    icone: Activity,
   },
 ];
 
