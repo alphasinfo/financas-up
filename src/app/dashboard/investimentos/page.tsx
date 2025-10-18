@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, formatarData } from "@/lib/formatters";
@@ -16,8 +17,8 @@ async function getInvestimentos(usuarioId: string) {
 }
 
 export default async function InvestimentosPage() {
-  const session = await getServerSession(authOptions);
-  const investimentos = await getInvestimentos(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const investimentos = await getInvestimentos(session?.user.id);
 
   const totalInvestido = investimentos.reduce(
     (acc, inv) => acc + inv.valorAplicado,

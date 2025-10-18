@@ -1,5 +1,6 @@
 // @ts-ignore - getServerSession existe no next-auth v4
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda } from "@/lib/formatters";
@@ -64,8 +65,8 @@ async function getTransacoes(usuarioId: string) {
 }
 
 export default async function FinanceiroPage() {
-  const session = await getServerSession(authOptions);
-  const dados = await getTransacoes(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const dados = await getTransacoes(session?.user.id);
 
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">

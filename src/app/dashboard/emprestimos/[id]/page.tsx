@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, formatarData } from "@/lib/formatters";
@@ -31,8 +32,8 @@ export default async function EmprestimoDetalhesPage({
 }: {
   params: { id: string };
 }) {
-  const session = await getServerSession(authOptions);
-  const emprestimo = await getEmprestimo(params.id, session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const emprestimo = await getEmprestimo(params.id, session?.user.id);
 
   if (!emprestimo) {
     notFound();

@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, formatarData } from "@/lib/formatters";
@@ -82,8 +83,8 @@ export default async function ContaDetalhesPage({
 }: {
   params: { id: string };
 }) {
-  const session = await getServerSession(authOptions);
-  const dados = await getContaDetalhes(params.id, session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const dados = await getContaDetalhes(params.id, session?.user.id);
 
   if (!dados) {
     notFound();

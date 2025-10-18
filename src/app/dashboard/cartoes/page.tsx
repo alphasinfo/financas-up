@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, calcularPorcentagem, formatarPorcentagem } from "@/lib/formatters";
@@ -51,8 +52,8 @@ async function getCartoes(usuarioId: string) {
 }
 
 export default async function CartoesPage() {
-  const session = await getServerSession(authOptions);
-  const cartoes = await getCartoes(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const cartoes = await getCartoes(session?.user.id);
 
   const limiteTotal = cartoes
     .filter((c) => c.ativo)

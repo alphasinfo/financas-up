@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda } from "@/lib/formatters";
@@ -20,8 +21,8 @@ async function getContas(usuarioId: string) {
 }
 
 export default async function ContasPage() {
-  const session = await getServerSession(authOptions);
-  const contas = await getContas(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const contas = await getContas(session?.user.id);
 
   const totalSaldo = contas
     .filter((c) => c.ativa)

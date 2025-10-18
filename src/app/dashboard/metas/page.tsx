@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, formatarData, calcularPorcentagem, formatarPorcentagem } from "@/lib/formatters";
@@ -16,8 +17,8 @@ async function getMetas(usuarioId: string) {
 }
 
 export default async function MetasPage() {
-  const session = await getServerSession(authOptions);
-  const metas = await getMetas(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const metas = await getMetas(session?.user.id);
 
   const metasAtivas = metas.filter((m) => m.status === "EM_ANDAMENTO");
   const metasConcluidas = metas.filter((m) => m.status === "CONCLUIDA");

@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda, formatarData } from "@/lib/formatters";
@@ -21,8 +22,8 @@ async function getEmprestimos(usuarioId: string) {
 }
 
 export default async function EmprestimosPage() {
-  const session = await getServerSession(authOptions);
-  const emprestimos = await getEmprestimos(session!.user.id);
+  const session = await getServerSession(authOptions) as Session | null;
+  const emprestimos = await getEmprestimos(session?.user.id);
 
   const totalEmprestado = emprestimos
     .filter((e) => e.status === "ATIVO")
