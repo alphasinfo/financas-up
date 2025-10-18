@@ -1,0 +1,354 @@
+-- ============================================
+-- BANCO DE DADOS COMPLETO - FINANÇAS UP
+-- ============================================
+-- SQL 100% VALIDADO com Prisma Schema
+-- Execute TUDO de uma vez no Supabase SQL Editor
+-- ============================================
+
+-- DELETAR TUDO PRIMEIRO
+DROP TABLE IF EXISTS "logs_acesso" CASCADE;
+DROP TABLE IF EXISTS "convites_compartilhamento" CASCADE;
+DROP TABLE IF EXISTS "compartilhamentos_conta" CASCADE;
+DROP TABLE IF EXISTS "conciliacoes" CASCADE;
+DROP TABLE IF EXISTS "metas" CASCADE;
+DROP TABLE IF EXISTS "orcamentos" CASCADE;
+DROP TABLE IF EXISTS "investimentos" CASCADE;
+DROP TABLE IF EXISTS "parcelas_emprestimo" CASCADE;
+DROP TABLE IF EXISTS "emprestimos" CASCADE;
+DROP TABLE IF EXISTS "pagamentos_fatura" CASCADE;
+DROP TABLE IF EXISTS "transacoes" CASCADE;
+DROP TABLE IF EXISTS "faturas" CASCADE;
+DROP TABLE IF EXISTS "cartoes_credito" CASCADE;
+DROP TABLE IF EXISTS "contas_bancarias" CASCADE;
+DROP TABLE IF EXISTS "categorias" CASCADE;
+DROP TABLE IF EXISTS "usuarios" CASCADE;
+
+-- ============================================
+-- CRIAR TABELAS
+-- ============================================
+
+-- USUÁRIOS
+CREATE TABLE "usuarios" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "email" TEXT NOT NULL UNIQUE,
+    "senha" TEXT,
+    "imagem" TEXT,
+    "logo" TEXT,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "enviarRelatorioEmail" BOOLEAN NOT NULL DEFAULT false,
+    "diaEnvioRelatorio" INTEGER,
+    "ultimoEnvioRelatorio" TIMESTAMP(3),
+    "notificacaoEmail" BOOLEAN NOT NULL DEFAULT true,
+    "notificacaoVencimento" BOOLEAN NOT NULL DEFAULT true,
+    "notificacaoOrcamento" BOOLEAN NOT NULL DEFAULT true,
+    "smtpProvider" TEXT,
+    "smtpEmail" TEXT,
+    "smtpPassword" TEXT,
+    "smtpHost" TEXT,
+    "smtpPort" INTEGER,
+    "smtpNome" TEXT
+);
+
+-- CATEGORIAS
+CREATE TABLE "categorias" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "cor" TEXT,
+    "icone" TEXT,
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CONTAS BANCÁRIAS
+CREATE TABLE "contas_bancarias" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "instituicao" TEXT NOT NULL,
+    "agencia" TEXT,
+    "numero" TEXT,
+    "tipo" TEXT NOT NULL,
+    "saldoInicial" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "saldoAtual" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "saldoDisponivel" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "temLimiteCredito" BOOLEAN NOT NULL DEFAULT false,
+    "limiteCredito" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "cor" TEXT,
+    "ativa" BOOLEAN NOT NULL DEFAULT true,
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CARTÕES DE CRÉDITO
+CREATE TABLE "cartoes_credito" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "banco" TEXT NOT NULL,
+    "bandeira" TEXT NOT NULL,
+    "apelido" TEXT,
+    "numeroMascara" TEXT,
+    "limiteTotal" DOUBLE PRECISION NOT NULL,
+    "limiteDisponivel" DOUBLE PRECISION NOT NULL,
+    "diaFechamento" INTEGER NOT NULL,
+    "diaVencimento" INTEGER NOT NULL,
+    "cor" TEXT,
+    "ativo" BOOLEAN NOT NULL DEFAULT true,
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- FATURAS
+CREATE TABLE "faturas" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "cartaoId" TEXT NOT NULL,
+    "mesReferencia" INTEGER NOT NULL,
+    "anoReferencia" INTEGER NOT NULL,
+    "dataFechamento" TIMESTAMP(3) NOT NULL,
+    "dataVencimento" TIMESTAMP(3) NOT NULL,
+    "valorTotal" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "valorPago" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'ABERTA',
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("cartaoId", "mesReferencia", "anoReferencia")
+);
+
+-- PAGAMENTOS DE FATURA
+CREATE TABLE "pagamentos_fatura" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "faturaId" TEXT NOT NULL,
+    "contaBancariaId" TEXT,
+    "emprestimoId" TEXT,
+    "valor" DOUBLE PRECISION NOT NULL,
+    "dataPagamento" TIMESTAMP(3) NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TRANSAÇÕES
+CREATE TABLE "transacoes" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "tipo" TEXT NOT NULL,
+    "descricao" TEXT NOT NULL,
+    "valor" DOUBLE PRECISION NOT NULL,
+    "dataCompetencia" TIMESTAMP(3) NOT NULL,
+    "dataLiquidacao" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PENDENTE',
+    "parcelado" BOOLEAN NOT NULL DEFAULT false,
+    "parcelaAtual" INTEGER,
+    "parcelaTotal" INTEGER,
+    "categoriaId" TEXT,
+    "contaBancariaId" TEXT,
+    "cartaoCreditoId" TEXT,
+    "faturaId" TEXT,
+    "usuarioId" TEXT NOT NULL,
+    "observacoes" TEXT,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- EMPRÉSTIMOS
+CREATE TABLE "emprestimos" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "instituicao" TEXT NOT NULL,
+    "descricao" TEXT,
+    "valorTotal" DOUBLE PRECISION NOT NULL,
+    "valorParcela" DOUBLE PRECISION NOT NULL,
+    "numeroParcelas" INTEGER NOT NULL,
+    "parcelasPagas" INTEGER NOT NULL DEFAULT 0,
+    "taxaJurosMensal" DOUBLE PRECISION,
+    "taxaJurosAnual" DOUBLE PRECISION,
+    "sistemaAmortizacao" TEXT NOT NULL DEFAULT 'PRICE',
+    "dataContratacao" TIMESTAMP(3) NOT NULL,
+    "diaVencimento" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ATIVO',
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- PARCELAS DE EMPRÉSTIMO
+CREATE TABLE "parcelas_emprestimo" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "emprestimoId" TEXT NOT NULL,
+    "numeroParcela" INTEGER NOT NULL,
+    "numero" INTEGER NOT NULL,
+    "valor" DOUBLE PRECISION NOT NULL,
+    "valorAmortizacao" DOUBLE PRECISION NOT NULL,
+    "valorJuros" DOUBLE PRECISION NOT NULL,
+    "saldoDevedor" DOUBLE PRECISION NOT NULL,
+    "dataVencimento" TIMESTAMP(3) NOT NULL,
+    "dataPagamento" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PENDENTE',
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("emprestimoId", "numeroParcela")
+);
+
+-- INVESTIMENTOS
+CREATE TABLE "investimentos" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "valorAplicado" DOUBLE PRECISION NOT NULL,
+    "valorAtual" DOUBLE PRECISION,
+    "taxaRendimento" DOUBLE PRECISION,
+    "dataAplicacao" TIMESTAMP(3) NOT NULL,
+    "dataVencimento" TIMESTAMP(3),
+    "instituicao" TEXT,
+    "observacoes" TEXT,
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ORÇAMENTOS
+CREATE TABLE "orcamentos" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nome" TEXT NOT NULL,
+    "categoriaId" TEXT,
+    "valorLimite" DOUBLE PRECISION NOT NULL,
+    "valorGasto" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "mesReferencia" INTEGER NOT NULL,
+    "anoReferencia" INTEGER NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- METAS
+CREATE TABLE "metas" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "titulo" TEXT NOT NULL,
+    "descricao" TEXT,
+    "valorAlvo" DOUBLE PRECISION NOT NULL,
+    "valorAtual" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "dataInicio" TIMESTAMP(3) NOT NULL,
+    "dataPrazo" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'EM_ANDAMENTO',
+    "usuarioId" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CONCILIAÇÕES
+CREATE TABLE "conciliacoes" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "tipo" TEXT NOT NULL,
+    "nomeArquivo" TEXT NOT NULL,
+    "dataImportacao" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "registrosTotal" INTEGER NOT NULL,
+    "registrosNovos" INTEGER NOT NULL,
+    "registrosDuplicados" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PROCESSADO',
+    "usuarioId" TEXT NOT NULL
+);
+
+-- COMPARTILHAMENTOS DE CONTA
+CREATE TABLE "compartilhamentos_conta" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "contaId" TEXT NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "permissao" TEXT NOT NULL DEFAULT 'VISUALIZAR',
+    "criadoPor" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ativo" BOOLEAN NOT NULL DEFAULT true,
+    UNIQUE ("contaId", "usuarioId")
+);
+
+-- CONVITES DE COMPARTILHAMENTO
+CREATE TABLE "convites_compartilhamento" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "recursoId" TEXT,
+    "permissao" TEXT NOT NULL DEFAULT 'VISUALIZAR',
+    "token" TEXT NOT NULL UNIQUE,
+    "criadoPor" TEXT NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiraEm" TIMESTAMP(3) NOT NULL,
+    "aceito" BOOLEAN NOT NULL DEFAULT false,
+    "aceitoEm" TIMESTAMP(3)
+);
+
+-- LOGS DE ACESSO
+CREATE TABLE "logs_acesso" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "usuarioId" TEXT NOT NULL,
+    "acao" TEXT NOT NULL,
+    "recurso" TEXT,
+    "recursoId" TEXT,
+    "ip" TEXT,
+    "userAgent" TEXT,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- FOREIGN KEYS
+-- ============================================
+
+ALTER TABLE "categorias" ADD CONSTRAINT "categorias_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "contas_bancarias" ADD CONSTRAINT "contas_bancarias_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "cartoes_credito" ADD CONSTRAINT "cartoes_credito_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "faturas" ADD CONSTRAINT "faturas_cartaoId_fkey" FOREIGN KEY ("cartaoId") REFERENCES "cartoes_credito" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "pagamentos_fatura" ADD CONSTRAINT "pagamentos_fatura_faturaId_fkey" FOREIGN KEY ("faturaId") REFERENCES "faturas" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "pagamentos_fatura" ADD CONSTRAINT "pagamentos_fatura_contaBancariaId_fkey" FOREIGN KEY ("contaBancariaId") REFERENCES "contas_bancarias" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "pagamentos_fatura" ADD CONSTRAINT "pagamentos_fatura_emprestimoId_fkey" FOREIGN KEY ("emprestimoId") REFERENCES "emprestimos" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "transacoes" ADD CONSTRAINT "transacoes_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "transacoes" ADD CONSTRAINT "transacoes_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "transacoes" ADD CONSTRAINT "transacoes_contaBancariaId_fkey" FOREIGN KEY ("contaBancariaId") REFERENCES "contas_bancarias" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "transacoes" ADD CONSTRAINT "transacoes_cartaoCreditoId_fkey" FOREIGN KEY ("cartaoCreditoId") REFERENCES "cartoes_credito" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "transacoes" ADD CONSTRAINT "transacoes_faturaId_fkey" FOREIGN KEY ("faturaId") REFERENCES "faturas" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "emprestimos" ADD CONSTRAINT "emprestimos_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "parcelas_emprestimo" ADD CONSTRAINT "parcelas_emprestimo_emprestimoId_fkey" FOREIGN KEY ("emprestimoId") REFERENCES "emprestimos" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "investimentos" ADD CONSTRAINT "investimentos_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "orcamentos" ADD CONSTRAINT "orcamentos_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "orcamentos" ADD CONSTRAINT "orcamentos_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "metas" ADD CONSTRAINT "metas_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "conciliacoes" ADD CONSTRAINT "conciliacoes_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "compartilhamentos_conta" ADD CONSTRAINT "compartilhamentos_conta_contaId_fkey" FOREIGN KEY ("contaId") REFERENCES "contas_bancarias" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "compartilhamentos_conta" ADD CONSTRAINT "compartilhamentos_conta_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "compartilhamentos_conta" ADD CONSTRAINT "compartilhamentos_conta_criadoPor_fkey" FOREIGN KEY ("criadoPor") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "convites_compartilhamento" ADD CONSTRAINT "convites_compartilhamento_criadoPor_fkey" FOREIGN KEY ("criadoPor") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "logs_acesso" ADD CONSTRAINT "logs_acesso_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ============================================
+-- ÍNDICES
+-- ============================================
+
+CREATE INDEX "idx_categorias_usuarioId" ON "categorias"("usuarioId");
+CREATE INDEX "idx_contas_usuarioId" ON "contas_bancarias"("usuarioId");
+CREATE INDEX "idx_cartoes_usuarioId" ON "cartoes_credito"("usuarioId");
+CREATE INDEX "idx_faturas_cartaoId" ON "faturas"("cartaoId");
+CREATE INDEX "idx_faturas_mesAno" ON "faturas"("mesReferencia", "anoReferencia");
+CREATE INDEX "idx_faturas_status" ON "faturas"("status");
+CREATE INDEX "idx_faturas_dataVencimento" ON "faturas"("dataVencimento");
+CREATE INDEX "idx_transacoes_usuarioId" ON "transacoes"("usuarioId");
+CREATE INDEX "idx_transacoes_categoriaId" ON "transacoes"("categoriaId");
+CREATE INDEX "idx_transacoes_dataCompetencia" ON "transacoes"("dataCompetencia");
+CREATE INDEX "idx_transacoes_usuarioData" ON "transacoes"("usuarioId", "dataCompetencia");
+CREATE INDEX "idx_transacoes_usuarioStatus" ON "transacoes"("usuarioId", "status");
+CREATE INDEX "idx_transacoes_contaBancariaId" ON "transacoes"("contaBancariaId");
+CREATE INDEX "idx_transacoes_cartaoCreditoId" ON "transacoes"("cartaoCreditoId");
+CREATE INDEX "idx_transacoes_faturaId" ON "transacoes"("faturaId");
+CREATE INDEX "idx_emprestimos_usuarioId" ON "emprestimos"("usuarioId");
+CREATE INDEX "idx_emprestimos_usuarioStatus" ON "emprestimos"("usuarioId", "status");
+CREATE INDEX "idx_emprestimos_status" ON "emprestimos"("status");
+CREATE INDEX "idx_parcelas_emprestimoId" ON "parcelas_emprestimo"("emprestimoId");
+CREATE INDEX "idx_parcelas_status" ON "parcelas_emprestimo"("status");
+CREATE INDEX "idx_parcelas_dataVencimento" ON "parcelas_emprestimo"("dataVencimento");
+CREATE INDEX "idx_investimentos_usuarioId" ON "investimentos"("usuarioId");
+CREATE INDEX "idx_orcamentos_usuarioId" ON "orcamentos"("usuarioId");
+CREATE INDEX "idx_orcamentos_usuarioMesAno" ON "orcamentos"("usuarioId", "mesReferencia", "anoReferencia");
+CREATE INDEX "idx_metas_usuarioId" ON "metas"("usuarioId");
+CREATE INDEX "idx_compartilhamentos_contaId" ON "compartilhamentos_conta"("contaId");
+CREATE INDEX "idx_compartilhamentos_usuarioId" ON "compartilhamentos_conta"("usuarioId");
+CREATE INDEX "idx_compartilhamentos_criadoPor" ON "compartilhamentos_conta"("criadoPor");
+CREATE INDEX "idx_convites_email" ON "convites_compartilhamento"("email");
+CREATE INDEX "idx_convites_token" ON "convites_compartilhamento"("token");
+CREATE INDEX "idx_convites_criadoPor" ON "convites_compartilhamento"("criadoPor");
+CREATE INDEX "idx_logs_usuarioId" ON "logs_acesso"("usuarioId");
+CREATE INDEX "idx_logs_acao" ON "logs_acesso"("acao");
+CREATE INDEX "idx_logs_criadoEm" ON "logs_acesso"("criadoEm");
