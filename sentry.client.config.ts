@@ -57,13 +57,8 @@ Sentry.init({
   
   // Integração com performance monitoring
   integrations: [
-    new Sentry.BrowserTracing({
-      tracePropagationTargets: [
-        'localhost',
-        /^https:\/\/financas-up\.vercel\.app/,
-      ],
-    }),
-    new Sentry.Replay({
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,
     }),

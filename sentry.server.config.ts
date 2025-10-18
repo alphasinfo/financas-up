@@ -31,7 +31,7 @@ Sentry.init({
     
     // Remover dados sensíveis de contexto
     if (event.contexts?.runtime?.env) {
-      const env = { ...event.contexts.runtime.env };
+      const env: Record<string, any> = { ...event.contexts.runtime.env };
       Object.keys(env).forEach(key => {
         if (key.includes('SECRET') || key.includes('PASSWORD') || key.includes('KEY')) {
           env[key] = '***';
@@ -45,7 +45,6 @@ Sentry.init({
   
   // Integração com performance monitoring
   integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-    new Sentry.Integrations.Prisma({ client: undefined }), // Será configurado dinamicamente
+    Sentry.httpIntegration(),
   ],
 });
