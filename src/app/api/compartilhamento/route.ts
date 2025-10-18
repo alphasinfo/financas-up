@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -17,9 +18,9 @@ const compartilharSchema = z.object({
 // Criar convite de compartilhamento
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as Session | null;
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
@@ -203,9 +204,9 @@ export async function POST(request: Request) {
 // Listar compartilhamentos
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as Session | null;
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
