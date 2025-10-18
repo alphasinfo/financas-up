@@ -14,7 +14,8 @@ const atualizarEmprestimoSchema = z.object({
   valorTotal: z.number().positive("Valor total deve ser positivo"),
   valorParcela: z.number().positive("Valor da parcela deve ser positivo"),
   numeroParcelas: z.number().int().positive("Número de parcelas deve ser positivo"),
-  taxaJuros: z.number().optional().nullable(),
+  taxaJurosMensal: z.number().optional().nullable(),
+  taxaJurosAnual: z.number().optional().nullable(),
 });
 
 export async function GET(
@@ -88,7 +89,7 @@ export async function PUT(
       );
     }
 
-    const { instituicao, descricao, valorTotal, valorParcela, numeroParcelas, taxaJuros } = validacao.data;
+    const { instituicao, descricao, valorTotal, valorParcela, numeroParcelas, taxaJurosMensal, taxaJurosAnual } = validacao.data;
 
     const emprestimoAtualizado = await prisma.emprestimo.update({
       where: { id: params.id },
@@ -98,7 +99,8 @@ export async function PUT(
         valorTotal,
         valorParcela,
         numeroParcelas,
-        taxaJuros,
+        taxaJurosMensal,
+        taxaJurosAnual,
       },
     });
 
