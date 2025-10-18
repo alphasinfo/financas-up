@@ -1,5 +1,5 @@
 // @ts-ignore - getServerSession existe no next-auth v4
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda } from "@/lib/formatters";

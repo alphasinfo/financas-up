@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { parseOFX } from "@/lib/parsers/ofx-parser";
 import { parseCSV } from "@/lib/parsers/csv-parser";
