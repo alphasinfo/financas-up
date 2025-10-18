@@ -13,31 +13,49 @@ export const authOptions: AuthOptions = {
         manterLogado: { label: "Manter Logado", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.senha) {
+        try {
+          if (!credentials?.email || !credentials?.senha) {
+            console.log('❌ Credenciais incompletas');
+            return null;
+          }
+
+          console.log('🔍 Buscando usuário:', credentials.email);
+
+          const usuario = await prisma.usuario.findUnique({
+            where: { email: credentials.email }
+          });
+
+          if (!usuario) {
+            console.log('❌ Usuário não encontrado:', credentials.email);
+            return null;
+          }
+
+          if (!usuario.senha) {
+            console.log('❌ Usuário sem senha cadastrada:', credentials.email);
+            return null;
+          }
+
+          console.log('🔐 Verificando senha...');
+          const senhaValida = await compare(credentials.senha, usuario.senha);
+
+          if (!senhaValida) {
+            console.log('❌ Senha inválida para:', credentials.email);
+            return null;
+          }
+
+          console.log('✅ Login bem-sucedido:', credentials.email);
+
+          return {
+            id: usuario.id,
+            email: usuario.email,
+            name: usuario.nome,
+            image: usuario.imagem || undefined,
+            manterLogado: credentials.manterLogado === "true",
+          };
+        } catch (error) {
+          console.error('❌ Erro no authorize:', error);
           return null;
         }
-
-        const usuario = await prisma.usuario.findUnique({
-          where: { email: credentials.email }
-        });
-
-        if (!usuario || !usuario.senha) {
-          return null;
-        }
-
-        const senhaValida = await compare(credentials.senha, usuario.senha);
-
-        if (!senhaValida) {
-          return null;
-        }
-
-        return {
-          id: usuario.id,
-          email: usuario.email,
-          name: usuario.nome,
-          image: usuario.imagem || undefined,
-          manterLogado: credentials.manterLogado === "true",
-        };
       }
     })
   ],

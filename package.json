@@ -30,7 +30,8 @@
     "corrigir-datas-faturas": "tsx scripts/corrigir-datas-faturas.ts",
     "db:local": "node scripts/utils/alternar-db.js local",
     "db:supabase": "node scripts/utils/alternar-db.js supabase",
-    "resetar-senhas-supabase": "tsx scripts/resetar-senhas-supabase.ts"
+    "resetar-senhas-supabase": "tsx scripts/resetar-senhas-supabase.ts",
+    "testar-login": "tsx scripts/testar-login.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

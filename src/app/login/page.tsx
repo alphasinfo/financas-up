@@ -25,6 +25,8 @@ export default function LoginPage() {
     setCarregando(true);
 
     try {
+      console.log('🔐 Tentando login com:', email);
+      
       const resultado = await signIn("credentials", {
         email,
         senha,
@@ -32,9 +34,14 @@ export default function LoginPage() {
         redirect: false,
       });
 
+      console.log('📊 Resultado do login:', resultado);
+
       if (resultado?.error) {
-        setErro("Email ou senha inválidos");
-      } else {
+        console.error('❌ Erro no login:', resultado.error);
+        setErro("Email ou senha inválidos. Verifique suas credenciais.");
+      } else if (resultado?.ok) {
+        console.log('✅ Login bem-sucedido!');
+        
         // Salvar preferência de manter logado no localStorage
         if (manterLogado) {
           localStorage.setItem("manterLogado", "true");
@@ -44,9 +51,13 @@ export default function LoginPage() {
         
         router.push("/dashboard");
         router.refresh();
+      } else {
+        console.error('⚠️ Resposta inesperada:', resultado);
+        setErro("Erro inesperado ao fazer login. Tente novamente.");
       }
-    } catch (_error) {
-      setErro("Erro ao fazer login. Tente novamente.");
+    } catch (error) {
+      console.error('❌ Exceção no login:', error);
+      setErro("Erro ao fazer login. Verifique sua conexão e tente novamente.");
     } finally {
       setCarregando(false);
     }
