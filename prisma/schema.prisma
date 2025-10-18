@@ -11,13 +11,12 @@ generator client {
 // 
 // Para DESENVOLVIMENTO LOCAL (SQLite):
 // datasource db {
-//   provider = "postgresql"
+//   provider = "sqlite"
 //   url      = env("DATABASE_URL")
 // }
 // .env: DATABASE_URL="file:./dev.db"
 //
 // Para PRODUÇÃO (PostgreSQL/Supabase):
-// Altere provider para "postgresql" quando for usar Supabase
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
