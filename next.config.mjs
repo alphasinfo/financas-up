@@ -70,15 +70,8 @@ const nextConfig = {
           }
         ],
       },
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/json; charset=utf-8'
-          }
-        ],
-      },
+      // Removido: Content-Type forçado causava conflito com NextAuth
+      // NextAuth precisa de application/x-www-form-urlencoded no callback
     ];
   },
   
