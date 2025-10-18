@@ -1,9 +1,9 @@
-import { NextAuthOptions } from "next-auth";
+import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credenciais",
@@ -50,7 +50,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user, trigger: _trigger, account: _account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         // Armazenar timestamp de criação do token
@@ -74,7 +74,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false, // Permitir em localhost
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 90 * 24 * 60 * 60, // 90 dias
       }
     },

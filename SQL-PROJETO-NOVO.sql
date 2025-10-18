@@ -273,12 +273,69 @@ ALTER TABLE "compartilhamentos_conta" ADD CONSTRAINT "compartilhamentos_conta_cr
 ALTER TABLE "convites_compartilhamento" ADD CONSTRAINT "convites_compartilhamento_criadoPor_fkey" FOREIGN KEY ("criadoPor") REFERENCES "usuarios" ("id") ON DELETE CASCADE;
 ALTER TABLE "logs_acesso" ADD CONSTRAINT "logs_acesso_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "usuarios" ("id") ON DELETE CASCADE;
 
+-- ============================================
+-- ÍNDICES DE PERFORMANCE
+-- ============================================
+-- Todos os índices do schema.prisma para garantir
+-- performance otimizada em produção
+
+-- CATEGORIAS
 CREATE INDEX "idx_categorias_usuarioId" ON "categorias"("usuarioId");
+
+-- CONTAS BANCÁRIAS
 CREATE INDEX "idx_contas_usuarioId" ON "contas_bancarias"("usuarioId");
+
+-- CARTÕES DE CRÉDITO
 CREATE INDEX "idx_cartoes_usuarioId" ON "cartoes_credito"("usuarioId");
+
+-- FATURAS (4 índices)
 CREATE INDEX "idx_faturas_cartaoId" ON "faturas"("cartaoId");
+CREATE INDEX "idx_faturas_mesReferencia_anoReferencia" ON "faturas"("mesReferencia", "anoReferencia");
+CREATE INDEX "idx_faturas_status" ON "faturas"("status");
+CREATE INDEX "idx_faturas_dataVencimento" ON "faturas"("dataVencimento");
+
+-- TRANSAÇÕES (8 índices - tabela mais crítica)
 CREATE INDEX "idx_transacoes_usuarioId" ON "transacoes"("usuarioId");
+CREATE INDEX "idx_transacoes_dataCompetencia" ON "transacoes"("dataCompetencia");
+CREATE INDEX "idx_transacoes_usuarioId_dataCompetencia" ON "transacoes"("usuarioId", "dataCompetencia");
+CREATE INDEX "idx_transacoes_usuarioId_status" ON "transacoes"("usuarioId", "status");
+CREATE INDEX "idx_transacoes_contaBancariaId" ON "transacoes"("contaBancariaId");
+CREATE INDEX "idx_transacoes_cartaoCreditoId" ON "transacoes"("cartaoCreditoId");
+CREATE INDEX "idx_transacoes_faturaId" ON "transacoes"("faturaId");
+CREATE INDEX "idx_transacoes_categoriaId" ON "transacoes"("categoriaId");
+
+-- EMPRÉSTIMOS (3 índices)
 CREATE INDEX "idx_emprestimos_usuarioId" ON "emprestimos"("usuarioId");
+CREATE INDEX "idx_emprestimos_usuarioId_status" ON "emprestimos"("usuarioId", "status");
+CREATE INDEX "idx_emprestimos_status" ON "emprestimos"("status");
+
+-- PARCELAS DE EMPRÉSTIMO (3 índices)
+CREATE INDEX "idx_parcelas_emprestimo_emprestimoId" ON "parcelas_emprestimo"("emprestimoId");
+CREATE INDEX "idx_parcelas_emprestimo_status" ON "parcelas_emprestimo"("status");
+CREATE INDEX "idx_parcelas_emprestimo_dataVencimento" ON "parcelas_emprestimo"("dataVencimento");
+
+-- INVESTIMENTOS
 CREATE INDEX "idx_investimentos_usuarioId" ON "investimentos"("usuarioId");
+
+-- ORÇAMENTOS (2 índices)
 CREATE INDEX "idx_orcamentos_usuarioId" ON "orcamentos"("usuarioId");
+CREATE INDEX "idx_orcamentos_usuarioId_mesReferencia_anoReferencia" ON "orcamentos"("usuarioId", "mesReferencia", "anoReferencia");
+
+-- METAS
 CREATE INDEX "idx_metas_usuarioId" ON "metas"("usuarioId");
+
+-- CONCILIAÇÕES
+CREATE INDEX "idx_conciliacoes_usuarioId" ON "conciliacoes"("usuarioId");
+
+-- COMPARTILHAMENTOS (3 índices)
+CREATE INDEX "idx_compartilhamentos_conta_usuarioId" ON "compartilhamentos_conta"("usuarioId");
+CREATE INDEX "idx_compartilhamentos_conta_contaId" ON "compartilhamentos_conta"("contaId");
+CREATE INDEX "idx_compartilhamentos_conta_criadoPor" ON "compartilhamentos_conta"("criadoPor");
+
+-- CONVITES (2 índices)
+CREATE INDEX "idx_convites_compartilhamento_email" ON "convites_compartilhamento"("email");
+CREATE INDEX "idx_convites_compartilhamento_criadoPor" ON "convites_compartilhamento"("criadoPor");
+
+-- LOGS DE ACESSO (2 índices)
+CREATE INDEX "idx_logs_acesso_usuarioId" ON "logs_acesso"("usuarioId");
+CREATE INDEX "idx_logs_acesso_criadoEm" ON "logs_acesso"("criadoEm");
