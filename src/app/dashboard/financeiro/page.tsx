@@ -71,7 +71,7 @@ export default async function FinanceiroPage() {
     notFound();
   }
 
-  const   const dados = await getTransacoes(session.user.id);
+  const dados = await getTransacoes(session.user.id);
 
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">

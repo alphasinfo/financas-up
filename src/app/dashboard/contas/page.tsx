@@ -27,7 +27,7 @@ export default async function ContasPage() {
     notFound();
   }
 
-  const   const contas = await getContas(session.user.id);
+  const contas = await getContas(session.user.id);
 
   const totalSaldo = contas
     .filter((c) => c.ativa)

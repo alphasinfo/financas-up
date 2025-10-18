@@ -23,7 +23,7 @@ export default async function MetasPage() {
     notFound();
   }
 
-  const   const metas = await getMetas(session.user.id);
+  const metas = await getMetas(session.user.id);
 
   const metasAtivas = metas.filter((m) => m.status === "EM_ANDAMENTO");
   const metasConcluidas = metas.filter((m) => m.status === "CONCLUIDA");

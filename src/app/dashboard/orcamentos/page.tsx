@@ -34,7 +34,7 @@ export default async function OrcamentosPage() {
     notFound();
   }
 
-  const   const orcamentos = await getOrcamentos(session.user.id);
+  const orcamentos = await getOrcamentos(session.user.id);
 
   const totalLimite = orcamentos.reduce((acc, orc) => acc + orc.valorLimite, 0);
   const totalGasto = orcamentos.reduce((acc, orc) => acc + orc.valorGasto, 0);

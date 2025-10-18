@@ -58,7 +58,7 @@ export default async function CartoesPage() {
     notFound();
   }
 
-  const   const cartoes = await getCartoes(session.user.id);
+  const cartoes = await getCartoes(session.user.id);
 
   const limiteTotal = cartoes
     .filter((c) => c.ativo)

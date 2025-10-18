@@ -23,7 +23,7 @@ export default async function InvestimentosPage() {
     notFound();
   }
 
-  const   const investimentos = await getInvestimentos(session.user.id);
+  const investimentos = await getInvestimentos(session.user.id);
 
   const totalInvestido = investimentos.reduce(
     (acc, inv) => acc + inv.valorAplicado,

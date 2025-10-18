@@ -28,7 +28,7 @@ export default async function EmprestimosPage() {
     notFound();
   }
 
-  const   const emprestimos = await getEmprestimos(session.user.id);
+  const emprestimos = await getEmprestimos(session.user.id);
 
   const totalEmprestado = emprestimos
     .filter((e) => e.status === "ATIVO")
