@@ -5,10 +5,18 @@ const nextConfig = {
   // Configurações para Vercel
   output: 'standalone',
   
+  // Otimizações de bundle
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
   eslint: {
