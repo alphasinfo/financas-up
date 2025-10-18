@@ -31,7 +31,9 @@
     "db:local": "node scripts/utils/alternar-db.js local",
     "db:supabase": "node scripts/utils/alternar-db.js supabase",
     "resetar-senhas-supabase": "tsx scripts/resetar-senhas-supabase.ts",
-    "testar-login": "tsx scripts/testar-login.ts"
+    "testar-login": "tsx scripts/testar-login.ts",
+    "gerar-secret": "node scripts/gerar-nextauth-secret.js",
+    "configurar-env": "node scripts/configurar-env.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
