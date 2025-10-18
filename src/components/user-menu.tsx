@@ -45,6 +45,8 @@ export function UserMenu() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full"
+          aria-label="Menu do usuário"
+          title="Abrir menu do usuário"
         >
           <UserAvatar size="lg" />
         </button>
@@ -55,6 +57,8 @@ export function UserMenu() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full"
+          aria-label="Menu do usuário"
+          title="Abrir menu do usuário"
         >
           <UserAvatar size="sm" />
         </button>

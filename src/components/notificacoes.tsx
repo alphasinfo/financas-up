@@ -128,6 +128,8 @@ export function Notificacoes() {
         size="icon"
         className="relative"
         onClick={() => setAberto(!aberto)}
+        aria-label="Notificações"
+        title="Ver notificações"
       >
         <Bell className="h-5 w-5" />
         {naoLidas > 0 && (
@@ -173,6 +175,8 @@ export function Notificacoes() {
                   size="icon"
                   onClick={() => setAberto(false)}
                   className="h-8 w-8"
+                  aria-label="Fechar notificações"
+                  title="Fechar"
                 >
                   <X className="h-4 w-4" />
                 </Button>
