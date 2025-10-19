@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { startOfMonth, subMonths, addMonths } from 'date-fns';
 
+// Forçar renderização dinâmica
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
