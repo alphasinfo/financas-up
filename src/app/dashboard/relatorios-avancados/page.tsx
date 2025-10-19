@@ -15,6 +15,9 @@ import {
   PieChart,
   LineChart
 } from "lucide-react";
+import { ComparacaoChart } from "@/components/charts/comparacao-chart";
+import { PrevisaoChart } from "@/components/charts/previsao-chart";
+import { PatrimonioChart } from "@/components/charts/patrimonio-chart";
 
 interface Comparacao {
   mes: string;
@@ -227,36 +230,43 @@ export default function RelatoriosAvancadosPage() {
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 </div>
+              ) : comparacoes.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  Nenhum dado disponível
+                </p>
               ) : (
-                <div className="space-y-3">
-                  {comparacoes.map((comp, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold">{comp.mes}</h3>
-                        <span
-                          className={`font-bold ${
-                            comp.saldo >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {formatarMoeda(comp.saldo)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Receitas</p>
-                          <p className="font-semibold text-green-600">
-                            {formatarMoeda(comp.receitas)}
-                          </p>
+                <div className="space-y-6">
+                  <ComparacaoChart data={comparacoes} />
+                  <div className="space-y-3">
+                    {comparacoes.map((comp, index) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold">{comp.mes}</h3>
+                          <span
+                            className={`font-bold ${
+                              comp.saldo >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            {formatarMoeda(comp.saldo)}
+                          </span>
                         </div>
-                        <div>
-                          <p className="text-gray-600">Despesas</p>
-                          <p className="font-semibold text-red-600">
-                            {formatarMoeda(comp.despesas)}
-                          </p>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600">Receitas</p>
+                            <p className="font-semibold text-green-600">
+                              {formatarMoeda(comp.receitas)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Despesas</p>
+                            <p className="font-semibold text-red-600">
+                              {formatarMoeda(comp.despesas)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -345,13 +355,20 @@ export default function RelatoriosAvancadosPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <PieChart className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <p>Gráfico de evolução patrimonial</p>
-                <p className="text-sm mt-2">
-                  Visualização interativa em desenvolvimento
-                </p>
-              </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                </div>
+              ) : (
+                <PatrimonioChart
+                  data={[
+                    { nome: 'Contas Bancárias', valor: 15000 },
+                    { nome: 'Investimentos', valor: 25000 },
+                    { nome: 'Carteira', valor: 2000 },
+                    { nome: 'Outros', valor: 5000 },
+                  ]}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
