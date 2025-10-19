@@ -13,13 +13,19 @@ export function middleware(request: NextRequest) {
   const identifier = getClientIdentifier(request);
   const pathname = request.nextUrl.pathname;
 
+  // Rotas do NextAuth não devem ter rate limiting (ele já tem proteção interna)
+  if (pathname.startsWith('/api/auth/')) {
+    // Pular rate limiting para NextAuth
+    const response = NextResponse.next();
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    return response;
+  }
+
   // Determinar tipo de rate limit baseado na rota
   let rateLimitConfig = RATE_LIMITS.PUBLIC;
 
-  if (pathname.startsWith('/api/auth')) {
-    // Rotas de autenticação: NextAuth faz múltiplas requisições
-    rateLimitConfig = { interval: 60 * 1000, maxRequests: 30 }; // 30 req/min
-  } else if (pathname.startsWith('/api/usuarios/cadastro')) {
+  if (pathname.startsWith('/api/usuarios/cadastro')) {
     // Cadastro: muito restritivo
     rateLimitConfig = { interval: 60 * 60 * 1000, maxRequests: 3 }; // 3 req/hora
   } else if (pathname.startsWith('/api/') && request.method !== 'GET') {
@@ -33,18 +39,21 @@ export function middleware(request: NextRequest) {
   const limit = rateLimit(identifier, rateLimitConfig);
 
   if (!limit.success) {
+    const now = Date.now();
+    const retryAfterSeconds = Math.ceil((limit.reset - now) / 1000);
+    
     return NextResponse.json(
       {
         erro: 'Muitas requisições. Tente novamente mais tarde.',
-        retryAfter: Math.ceil(limit.reset / 1000),
+        retryAfter: retryAfterSeconds,
       },
       {
         status: 429,
         headers: {
-          'Retry-After': String(Math.ceil(limit.reset / 1000)),
+          'Retry-After': String(retryAfterSeconds),
           'X-RateLimit-Limit': String(limit.limit),
           'X-RateLimit-Remaining': String(limit.remaining),
-          'X-RateLimit-Reset': String(limit.reset),
+          'X-RateLimit-Reset': String(Math.ceil(limit.reset / 1000)),
         },
       }
     );
