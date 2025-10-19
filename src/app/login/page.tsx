@@ -27,10 +27,10 @@ export default function LoginPage() {
     try {
       console.log('🔐 Tentando login com:', email);
       
+      // Tentar com NextAuth primeiro
       const resultado = await signIn("credentials", {
         email,
         senha,
-        manterLogado: manterLogado ? "true" : "false",
         redirect: false,
       });
 
