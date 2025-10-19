@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 
 // Marcar como rota dinâmica
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Buscar todos os dados do usuário
+    // Buscar todos os dados do usuário com retry
     const [
       usuario,
       contas,
@@ -28,66 +29,84 @@ export async function GET() {
       orcamentos,
       metas,
     ] = await Promise.all([
-      prisma.usuario.findUnique({
-        where: { id: session.user.id },
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          criadoEm: true,
-        },
-      }),
-      prisma.contaBancaria.findMany({
-        where: { usuarioId: session.user.id },
-      }),
-      prisma.cartaoCredito.findMany({
-        where: { usuarioId: session.user.id },
-        include: {
-          faturas: true,
-        },
-      }),
-      prisma.transacao.findMany({
-        where: { usuarioId: session.user.id },
-        take: 5000, // Limite para evitar timeout
-        orderBy: { dataCompetencia: 'desc' },
-        select: {
-          id: true,
-          descricao: true,
-          valor: true,
-          tipo: true,
-          status: true,
-          dataCompetencia: true,
-          dataLiquidacao: true,
-          parcelado: true,
-          parcelaAtual: true,
-          parcelaTotal: true,
-          categoria: {
-            select: {
-              nome: true,
-              tipo: true,
-              cor: true,
+      withRetry(() =>
+        prisma.usuario.findUnique({
+          where: { id: session.user.id },
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            criadoEm: true,
+          },
+        })
+      ),
+      withRetry(() =>
+        prisma.contaBancaria.findMany({
+          where: { usuarioId: session.user.id },
+        })
+      ),
+      withRetry(() =>
+        prisma.cartaoCredito.findMany({
+          where: { usuarioId: session.user.id },
+          include: {
+            faturas: true,
+          },
+        })
+      ),
+      withRetry(() =>
+        prisma.transacao.findMany({
+          where: { usuarioId: session.user.id },
+          take: 5000, // Limite para evitar timeout
+          orderBy: { dataCompetencia: 'desc' },
+          select: {
+            id: true,
+            descricao: true,
+            valor: true,
+            tipo: true,
+            status: true,
+            dataCompetencia: true,
+            dataLiquidacao: true,
+            parcelado: true,
+            parcelaAtual: true,
+            parcelaTotal: true,
+            categoria: {
+              select: {
+                nome: true,
+                tipo: true,
+                cor: true,
+              },
             },
           },
-        },
-      }),
-      prisma.categoria.findMany({
-        where: { usuarioId: session.user.id },
-      }),
-      prisma.emprestimo.findMany({
-        where: { usuarioId: session.user.id },
-        include: {
-          parcelas: true,
-        },
-      }),
-      prisma.investimento.findMany({
-        where: { usuarioId: session.user.id },
-      }),
-      prisma.orcamento.findMany({
-        where: { usuarioId: session.user.id },
-      }),
-      prisma.meta.findMany({
-        where: { usuarioId: session.user.id },
-      }),
+        })
+      ),
+      withRetry(() =>
+        prisma.categoria.findMany({
+          where: { usuarioId: session.user.id },
+        })
+      ),
+      withRetry(() =>
+        prisma.emprestimo.findMany({
+          where: { usuarioId: session.user.id },
+          include: {
+            parcelas: true,
+          },
+        })
+      ),
+      withRetry(() =>
+        prisma.investimento.findMany({
+          where: { usuarioId: session.user.id },
+        })
+      ),
+      withRetry(() =>
+        prisma.orcamento.findMany({
+          where: { usuarioId: session.user.id },
+        })
+      ),
+      withRetry(() =>
+        prisma.meta.findMany({
+          where: { usuarioId: session.user.id },
+        })
+      ),
     ]);
 
     // Montar objeto com todos os dados

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 import { z } from "zod";
 import { calcularFaturaCartao, arredondarValor } from "@/lib/formatters";
 import dayjs from "dayjs";
@@ -60,49 +61,51 @@ export async function GET(request: Request) {
       };
     }
 
-    // Buscar transações com paginação
+    // Buscar transações com paginação e retry
     const [transacoes, total] = await Promise.all([
-      prisma.transacao.findMany({
-        where,
-        orderBy: { dataCompetencia: "desc" },
-        take: limit,
-        skip,
-        select: {
-          id: true,
-          tipo: true,
-          descricao: true,
-          valor: true,
-          dataCompetencia: true,
-          dataLiquidacao: true,
-          status: true,
-          parcelado: true,
-          parcelaAtual: true,
-          parcelaTotal: true,
-          observacoes: true,
-          categoria: {
-            select: {
-              id: true,
-              nome: true,
-              tipo: true,
-              cor: true,
+      withRetry(() =>
+        prisma.transacao.findMany({
+          where,
+          orderBy: { dataCompetencia: "desc" },
+          take: limit,
+          skip,
+          select: {
+            id: true,
+            tipo: true,
+            descricao: true,
+            valor: true,
+            dataCompetencia: true,
+            dataLiquidacao: true,
+            status: true,
+            parcelado: true,
+            parcelaAtual: true,
+            parcelaTotal: true,
+            observacoes: true,
+            categoria: {
+              select: {
+                id: true,
+                nome: true,
+                tipo: true,
+                cor: true,
+              },
+            },
+            contaBancaria: {
+              select: {
+                id: true,
+                nome: true,
+              },
+            },
+            cartaoCredito: {
+              select: {
+                id: true,
+                nome: true,
+                bandeira: true,
+              },
             },
           },
-          contaBancaria: {
-            select: {
-              id: true,
-              nome: true,
-            },
-          },
-          cartaoCredito: {
-            select: {
-              id: true,
-              nome: true,
-              bandeira: true,
-            },
-          },
-        },
-      }),
-      prisma.transacao.count({ where }),
+        })
+      ),
+      withRetry(() => prisma.transacao.count({ where })),
     ]);
 
     return NextResponse.json({
@@ -147,9 +150,11 @@ export async function POST(request: Request) {
 
     // Se for despesa com cartão de crédito
     if (dados.tipo === "DESPESA" && dados.cartaoCreditoId) {
-      const cartao = await prisma.cartaoCredito.findUnique({
-        where: { id: dados.cartaoCreditoId },
-      });
+      const cartao = await withRetry(() =>
+        prisma.cartaoCredito.findUnique({
+          where: { id: dados.cartaoCreditoId! },
+        })
+      );
 
       if (!cartao) {
         return NextResponse.json(
@@ -405,9 +410,11 @@ export async function POST(request: Request) {
 
     // Se for despesa com conta bancária
     if (dados.tipo === "DESPESA" && dados.contaBancariaId) {
-      const conta = await prisma.contaBancaria.findUnique({
-        where: { id: dados.contaBancariaId },
-      });
+      const conta = await withRetry(() =>
+        prisma.contaBancaria.findUnique({
+          where: { id: dados.contaBancariaId! },
+        })
+      );
 
       if (!conta) {
         return NextResponse.json(
