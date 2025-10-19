@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const transacoes = await prisma.transacao.findMany({
       where: {
         usuarioId: session.user.id,
-        data: {
+        dataCompetencia: {
           gte: inicio,
         },
       },
