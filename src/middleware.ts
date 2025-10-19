@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
   let rateLimitConfig = RATE_LIMITS.PUBLIC;
 
   if (pathname.startsWith('/api/auth')) {
-    // Rotas de autenticação: mais restritivo
-    rateLimitConfig = { interval: 15 * 60 * 1000, maxRequests: 5 }; // 5 req/15min
+    // Rotas de autenticação: NextAuth faz múltiplas requisições
+    rateLimitConfig = { interval: 60 * 1000, maxRequests: 30 }; // 30 req/min
   } else if (pathname.startsWith('/api/usuarios/cadastro')) {
     // Cadastro: muito restritivo
     rateLimitConfig = { interval: 60 * 60 * 1000, maxRequests: 3 }; // 3 req/hora
