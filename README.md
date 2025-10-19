@@ -1,11 +1,12 @@
 # 💰 Finanças UP
 
-> Sistema completo de gestão financeira pessoal com controle de contas, cartões, investimentos e muito mais!
+> Sistema completo de gestão financeira pessoal e empresarial com recursos avançados
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5-2D3748)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
+[![Tests](https://img.shields.io/badge/Tests-233%20passing-success)](/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ---
