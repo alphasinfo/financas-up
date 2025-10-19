@@ -73,23 +73,23 @@ describe('Rate Limiting', () => {
 
   describe('RATE_LIMITS presets', () => {
     it('deve ter configuração PUBLIC correta', () => {
-      expect(RATE_LIMITS.PUBLIC.interval).toBe(15 * 60 * 1000)
-      expect(RATE_LIMITS.PUBLIC.maxRequests).toBe(10)
+      expect(RATE_LIMITS.PUBLIC.interval).toBe(60 * 1000)
+      expect(RATE_LIMITS.PUBLIC.maxRequests).toBe(100)
     })
 
     it('deve ter configuração AUTHENTICATED correta', () => {
       expect(RATE_LIMITS.AUTHENTICATED.interval).toBe(60 * 1000)
-      expect(RATE_LIMITS.AUTHENTICATED.maxRequests).toBe(60)
+      expect(RATE_LIMITS.AUTHENTICATED.maxRequests).toBe(300)
     })
 
     it('deve ter configuração WRITE correta', () => {
       expect(RATE_LIMITS.WRITE.interval).toBe(60 * 1000)
-      expect(RATE_LIMITS.WRITE.maxRequests).toBe(30)
+      expect(RATE_LIMITS.WRITE.maxRequests).toBe(200)
     })
 
     it('deve ter configuração READ correta', () => {
       expect(RATE_LIMITS.READ.interval).toBe(60 * 1000)
-      expect(RATE_LIMITS.READ.maxRequests).toBe(100)
+      expect(RATE_LIMITS.READ.maxRequests).toBe(500)
     })
   })
 })

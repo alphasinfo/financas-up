@@ -9,26 +9,26 @@ describe('Middleware - Rate Limiting Configuration', () => {
   describe('RATE_LIMITS', () => {
     it('deve ter configuração PUBLIC', () => {
       expect(RATE_LIMITS.PUBLIC).toBeDefined();
-      expect(RATE_LIMITS.PUBLIC.interval).toBe(15 * 60 * 1000); // 15 minutos
-      expect(RATE_LIMITS.PUBLIC.maxRequests).toBe(10);
+      expect(RATE_LIMITS.PUBLIC.interval).toBe(60 * 1000); // 1 minuto
+      expect(RATE_LIMITS.PUBLIC.maxRequests).toBe(100);
     });
 
     it('deve ter configuração AUTHENTICATED', () => {
       expect(RATE_LIMITS.AUTHENTICATED).toBeDefined();
       expect(RATE_LIMITS.AUTHENTICATED.interval).toBe(60 * 1000); // 1 minuto
-      expect(RATE_LIMITS.AUTHENTICATED.maxRequests).toBe(60);
+      expect(RATE_LIMITS.AUTHENTICATED.maxRequests).toBe(300);
     });
 
     it('deve ter configuração WRITE', () => {
       expect(RATE_LIMITS.WRITE).toBeDefined();
       expect(RATE_LIMITS.WRITE.interval).toBe(60 * 1000);
-      expect(RATE_LIMITS.WRITE.maxRequests).toBe(30);
+      expect(RATE_LIMITS.WRITE.maxRequests).toBe(200);
     });
 
     it('deve ter configuração READ', () => {
       expect(RATE_LIMITS.READ).toBeDefined();
       expect(RATE_LIMITS.READ.interval).toBe(60 * 1000);
-      expect(RATE_LIMITS.READ.maxRequests).toBe(100);
+      expect(RATE_LIMITS.READ.maxRequests).toBe(500);
     });
   });
 
