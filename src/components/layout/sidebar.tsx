@@ -19,6 +19,8 @@ import {
   Sparkles,
   Menu,
   X,
+  Database,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -82,6 +84,16 @@ const menuItems = [
     titulo: "Insights IA",
     href: "/dashboard/insights",
     icone: Sparkles,
+  },
+  {
+    titulo: "Relatórios Avançados",
+    href: "/dashboard/relatorios-avancados",
+    icone: BarChart3,
+  },
+  {
+    titulo: "Backup",
+    href: "/dashboard/backup",
+    icone: Database,
   },
 ];
 
