@@ -24,7 +24,7 @@ const nextConfig = {
       '@fullcalendar/react',
       '@fullcalendar/daygrid',
     ],
-    optimizeCss: true,
+    // optimizeCss: true, // Desabilitado - requer critters
     scrollRestoration: true,
   },
   
