@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
+import '@/lib/chart-config'; // Registrar componentes do Chart.js
 
 // Lazy load dos componentes de gráfico
 const Bar = dynamic(() => import('react-chartjs-2').then(mod => ({ default: mod.Bar })), {
