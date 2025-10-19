@@ -71,22 +71,36 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions) as Session | null;
 
-    if (!session || !session.user) {
+    if (!session?.user?.id) {
+      console.error('[Logo GET] Sessão inválida ou sem ID');
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
+
+    console.log('[Logo GET] Buscando logo para usuário:', session.user.id);
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: session.user.id },
       select: { logo: true },
     });
 
+    if (!usuario) {
+      console.error('[Logo GET] Usuário não encontrado:', session.user.id);
+      return NextResponse.json({ erro: "Usuário não encontrado" }, { status: 404 });
+    }
+
+    console.log('[Logo GET] Logo encontrado:', usuario.logo ? 'Sim' : 'Não');
+
     return NextResponse.json({
-      foto: usuario?.logo || null, // Campo logo agora retorna foto do usuário
+      foto: usuario.logo || null,
     });
-  } catch (error) {
-    console.error("Erro ao buscar logo:", error);
+  } catch (error: any) {
+    console.error("[Logo GET] Erro completo:", error);
+    console.error("[Logo GET] Stack:", error?.stack);
     return NextResponse.json(
-      { erro: "Erro interno do servidor" },
+      { 
+        erro: "Erro interno do servidor",
+        details: error?.message || 'Erro desconhecido'
+      },
       { status: 500 }
     );
   }

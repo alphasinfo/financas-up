@@ -1,5 +1,5 @@
 // Service Worker Otimizado para PWA
-const CACHE_VERSION = '6';
+const CACHE_VERSION = '7';
 const CACHE_NAME = `financas-up-v${CACHE_VERSION}`;
 const CACHE_STATIC = `static-v${CACHE_VERSION}`;
 const CACHE_DYNAMIC = `dynamic-v${CACHE_VERSION}`;
@@ -101,12 +101,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Ignorar scripts do Vercel (analytics, speed insights, etc)
+  const url = new URL(event.request.url);
+  if (url.pathname.includes('/_vercel/') || 
+      url.pathname.includes('/vercel-insights') ||
+      url.pathname.includes('/speed-insights')) {
+    return; // Deixar o navegador lidar com esses recursos
+  }
+
   const strategy = getCacheStrategy(event.request);
   
   if (strategy === 'cache-first') {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(
+      cacheFirst(event.request).catch(err => {
+        console.warn('[SW] Cache-first falhou:', err);
+        return fetch(event.request);
+      })
+    );
   } else {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(
+      networkFirst(event.request).catch(err => {
+        console.warn('[SW] Network-first falhou:', err);
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      })
+    );
   }
 });
 

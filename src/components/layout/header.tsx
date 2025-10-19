@@ -132,7 +132,7 @@ export function Header() {
               </div>
             </div>
             <Select value={moedaSelecionada} onValueChange={handleMoedaChange}>
-              <SelectTrigger className="w-[80px] border-0 bg-transparent">
+              <SelectTrigger className="w-[80px] border-0 bg-transparent" aria-label="Selecionar moeda">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
