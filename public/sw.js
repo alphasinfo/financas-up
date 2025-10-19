@@ -1,5 +1,10 @@
-// Service Worker para PWA
-const CACHE_NAME = 'financas-up-v5';
+// Service Worker Otimizado para PWA
+const CACHE_VERSION = '6';
+const CACHE_NAME = `financas-up-v${CACHE_VERSION}`;
+const CACHE_STATIC = `static-v${CACHE_VERSION}`;
+const CACHE_DYNAMIC = `dynamic-v${CACHE_VERSION}`;
+const CACHE_API = `api-v${CACHE_VERSION}`;
+
 const urlsToCache = [
   '/',
   '/login',
@@ -8,6 +13,13 @@ const urlsToCache = [
   '/icons/icon-512x512.png',
   '/icons/icon-32x32.png'
 ];
+
+// Tempo máximo de cache para diferentes tipos de recursos
+const CACHE_DURATION = {
+  static: 7 * 24 * 60 * 60 * 1000, // 7 dias
+  dynamic: 24 * 60 * 60 * 1000,     // 1 dia
+  api: 5 * 60 * 1000,                // 5 minutos
+};
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
@@ -30,6 +42,58 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// Determinar estratégia de cache baseada no tipo de recurso
+function getCacheStrategy(request) {
+  const url = new URL(request.url);
+  
+  // APIs: Network-First (sempre buscar dados frescos)
+  if (url.pathname.startsWith('/api/')) {
+    return 'network-first';
+  }
+  
+  // Assets estáticos: Cache-First
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2)$/)) {
+    return 'cache-first';
+  }
+  
+  // Páginas HTML: Network-First com fallback
+  return 'network-first';
+}
+
+// Estratégia Cache-First
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+  
+  const response = await fetch(request);
+  if (response && response.status === 200) {
+    const cache = await caches.open(CACHE_STATIC);
+    cache.put(request, response.clone());
+  }
+  return response;
+}
+
+// Estratégia Network-First
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      const cacheName = request.url.includes('/api/') ? CACHE_API : CACHE_DYNAMIC;
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    throw error;
+  }
+}
+
 // Interceptar requisições
 self.addEventListener('fetch', (event) => {
   // Ignorar requisições POST, PUT, DELETE (apenas cachear GET)
@@ -37,34 +101,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - retornar resposta do cache
-        if (response) {
-          return response;
-        }
-
-        return fetch(event.request).then(
-          (response) => {
-            // Verificar se recebemos uma resposta válida
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clonar a resposta
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-  );
+  const strategy = getCacheStrategy(event.request);
+  
+  if (strategy === 'cache-first') {
+    event.respondWith(cacheFirst(event.request));
+  } else {
+    event.respondWith(networkFirst(event.request));
+  }
 });
 
 // Atualizar Service Worker

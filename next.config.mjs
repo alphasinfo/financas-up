@@ -16,26 +16,39 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'chart.js',
+      'react-chartjs-2',
+      '@fullcalendar/react',
+      '@fullcalendar/daygrid',
+    ],
+    optimizeCss: true,
+    scrollRestoration: true,
   },
   
   eslint: {
-    // Permite que o build prossiga mesmo com erros de ESLint
     ignoreDuringBuilds: true,
   },
   
   typescript: {
-    // Ignora erros de tipo durante build (já corrigidos localmente)
     ignoreBuildErrors: false,
   },
   
   // Otimizações para produção
   swcMinify: true,
+  compress: true,
+  optimizeFonts: true,
   
   // Configuração de imagens
   images: {
     domains: [],
     unoptimized: false,
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
   },
   
   // Headers de segurança e performance

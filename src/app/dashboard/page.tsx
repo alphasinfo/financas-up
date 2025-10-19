@@ -15,7 +15,11 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-async function getDashboardData(usuarioId: string) {
+// Importar função otimizada com cache
+import { getDashboardDataOptimized } from "@/lib/dashboard-optimized";
+
+// Manter função antiga como fallback (comentada)
+async function getDashboardDataLegacy(usuarioId: string) {
   // Buscar dados em paralelo para melhor performance
   const inicioMes = new Date();
   inicioMes.setDate(1);
@@ -231,7 +235,7 @@ export default async function DashboardPage() {
     notFound();
   }
 
-  const dados = await getDashboardData(session.user.id);
+  const dados = await getDashboardDataOptimized(session.user.id);
 
   const cards = [
     {

@@ -11,31 +11,13 @@ import { Printer, Download, TrendingUp, TrendingDown, DollarSign, Filter, X } fr
 import { formatarMoeda } from "@/lib/formatters";
 import { exportarRelatorioParaPDF, baixarPDF } from "@/lib/pdf-export";
 import { TransacaoItem } from "@/components/transacao-item";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Bar, Line, Pie } from "react-chartjs-2";
+import dynamic from 'next/dynamic';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Lazy load do componente de gráficos
+const LazyChart = dynamic(() => import('@/components/lazy-chart').then(mod => mod.LazyChart), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">Carregando gráficos...</div>
+});
 
 interface DadosRelatorio {
   receitasMes: number;
@@ -292,7 +274,7 @@ export default function RelatoriosPage() {
               <CardTitle>Receitas vs Despesas</CardTitle>
             </CardHeader>
             <CardContent>
-              <Bar data={dadosReceitasDespesas} options={opcoes} />
+              <LazyChart type="bar" data={dadosReceitasDespesas} options={opcoes} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -304,7 +286,7 @@ export default function RelatoriosPage() {
                 <CardTitle>Despesas por Categoria</CardTitle>
               </CardHeader>
               <CardContent>
-                <Pie data={dadosDespesasPorCategoria} options={opcoes} />
+                <LazyChart type="pie" data={dadosDespesasPorCategoria} options={opcoes} />
               </CardContent>
             </Card>
 
@@ -337,7 +319,7 @@ export default function RelatoriosPage() {
               <CardTitle>Evolução Mensal</CardTitle>
             </CardHeader>
             <CardContent>
-              <Line data={dadosEvolucaoMensal} options={opcoes} />
+              <LazyChart type="line" data={dadosEvolucaoMensal} options={opcoes} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -84,6 +84,7 @@ model ContaBancaria {
   transacoes        Transacao[]
 
   @@index([usuarioId], map: "idx_contas_usuarioId")
+  @@index([usuarioId, ativa], map: "idx_contas_usuarioId_ativa")
   @@map("contas_bancarias")
 }
 
@@ -108,6 +109,7 @@ model CartaoCredito {
   transacoes       Transacao[]
 
   @@index([usuarioId], map: "idx_cartoes_usuarioId")
+  @@index([usuarioId, ativo], map: "idx_cartoes_usuarioId_ativo")
   @@map("cartoes_credito")
 }
 
@@ -183,6 +185,9 @@ model Transacao {
   @@index([usuarioId], map: "idx_transacoes_usuarioId")
   @@index([usuarioId, dataCompetencia], map: "idx_transacoes_usuarioId_dataCompetencia")
   @@index([usuarioId, status], map: "idx_transacoes_usuarioId_status")
+  @@index([usuarioId, tipo, dataCompetencia], map: "idx_transacoes_usuarioId_tipo_data")
+  @@index([usuarioId, status, dataCompetencia], map: "idx_transacoes_usuarioId_status_data")
+  @@index([cartaoCreditoId, dataCompetencia], map: "idx_transacoes_cartao_data")
   @@map("transacoes")
 }
 
