@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { withCache, getDashboardCacheKey } from "@/lib/cache";
+import { withRetry } from "@/lib/prisma-retry";
 
 /**
  * Função otimizada para buscar dados do dashboard
  * - Usa cache com TTL de 2 minutos
  * - Queries otimizadas com select específico
  * - Agregações no banco de dados
+ * - Retry automático para erros de conexão
  */
 export async function getDashboardDataOptimized(usuarioId: string) {
   const cacheKey = getDashboardCacheKey(usuarioId);
@@ -24,7 +26,7 @@ export async function getDashboardDataOptimized(usuarioId: string) {
     const daquiA7Dias = new Date();
     daquiA7Dias.setDate(daquiA7Dias.getDate() + 7);
 
-    // Executar todas as queries em paralelo
+    // Executar todas as queries em paralelo com retry
     const [
       contasAggregate,
       cartoesAggregate,
@@ -38,144 +40,166 @@ export async function getDashboardDataOptimized(usuarioId: string) {
       contasVencidas,
       faturasVencidas,
     ] = await Promise.all([
-      // Agregação de contas
-      prisma.contaBancaria.aggregate({
-        where: { usuarioId, ativa: true },
-        _sum: { saldoAtual: true, limiteCredito: true },
-        _count: true,
-      }),
+      // Agregação de contas com retry
+      withRetry(() =>
+        prisma.contaBancaria.aggregate({
+          where: { usuarioId, ativa: true },
+          _sum: { saldoAtual: true, limiteCredito: true },
+          _count: true,
+        })
+      ),
 
-      // Agregação de cartões
-      prisma.cartaoCredito.aggregate({
-        where: { usuarioId, ativo: true },
-        _sum: { limiteTotal: true, limiteDisponivel: true },
-        _count: true,
-      }),
+      // Agregação de cartões com retry
+      withRetry(() =>
+        prisma.cartaoCredito.aggregate({
+          where: { usuarioId, ativo: true },
+          _sum: { limiteTotal: true, limiteDisponivel: true },
+          _count: true,
+        })
+      ),
 
-      // Agregação de transações do mês
-      prisma.transacao.groupBy({
-        by: ['tipo', 'status'],
-        where: {
-          usuarioId,
-          dataCompetencia: { gte: inicioMes, lte: fimMes },
-        },
-        _sum: { valor: true },
-      }),
+      // Agregação de transações do mês com retry
+      withRetry(() =>
+        prisma.transacao.groupBy({
+          by: ['tipo', 'status'],
+          where: {
+            usuarioId,
+            dataCompetencia: { gte: inicioMes, lte: fimMes },
+          },
+          _sum: { valor: true },
+        })
+      ),
 
-      // Agregação de transações de cartão
-      prisma.transacao.aggregate({
-        where: {
-          usuarioId,
-          cartaoCreditoId: { not: null },
-          dataCompetencia: { gte: inicioMes, lte: fimMes },
-        },
-        _sum: { valor: true },
-      }),
+      // Agregação de transações de cartão com retry
+      withRetry(() =>
+        prisma.transacao.aggregate({
+          where: {
+            usuarioId,
+            cartaoCreditoId: { not: null },
+            dataCompetencia: { gte: inicioMes, lte: fimMes },
+          },
+          _sum: { valor: true },
+        })
+      ),
 
-      // Metas (precisamos dos dados completos)
-      prisma.meta.findMany({
-        where: { usuarioId },
-        select: {
-          id: true,
-          titulo: true,
-          valorAlvo: true,
-          valorAtual: true,
-          status: true,
-          dataPrazo: true,
-        },
-      }),
+      // Metas com retry
+      withRetry(() =>
+        prisma.meta.findMany({
+          where: { usuarioId },
+          select: {
+            id: true,
+            titulo: true,
+            valorAlvo: true,
+            valorAtual: true,
+            status: true,
+            dataPrazo: true,
+          },
+        })
+      ),
 
-      // Empréstimos (precisamos dos dados completos)
-      prisma.emprestimo.findMany({
-        where: { usuarioId },
-        select: {
-          id: true,
-          instituicao: true,
-          descricao: true,
-          valorTotal: true,
-          valorParcela: true,
-          numeroParcelas: true,
-          parcelasPagas: true,
-          status: true,
-        },
-      }),
+      // Empréstimos com retry
+      withRetry(() =>
+        prisma.emprestimo.findMany({
+          where: { usuarioId },
+          select: {
+            id: true,
+            instituicao: true,
+            descricao: true,
+            valorTotal: true,
+            valorParcela: true,
+            numeroParcelas: true,
+            parcelasPagas: true,
+            status: true,
+          },
+        })
+      ),
 
-      // Orçamentos
-      prisma.orcamento.findMany({
-        where: {
-          usuarioId,
-          mesReferencia: inicioMes.getMonth() + 1,
-          anoReferencia: inicioMes.getFullYear(),
-        },
-        select: {
-          id: true,
-          nome: true,
-          valorLimite: true,
-          valorGasto: true,
-        },
-      }),
+      // Orçamentos com retry
+      withRetry(() =>
+        prisma.orcamento.findMany({
+          where: {
+            usuarioId,
+            mesReferencia: inicioMes.getMonth() + 1,
+            anoReferencia: inicioMes.getFullYear(),
+          },
+          select: {
+            id: true,
+            nome: true,
+            valorLimite: true,
+            valorGasto: true,
+          },
+        })
+      ),
 
-      // Agregação de investimentos
-      prisma.investimento.aggregate({
-        where: { usuarioId },
-        _sum: { valorAplicado: true, valorAtual: true },
-        _count: true,
-      }),
+      // Agregação de investimentos com retry
+      withRetry(() =>
+        prisma.investimento.aggregate({
+          where: { usuarioId },
+          _sum: { valorAplicado: true, valorAtual: true },
+          _count: true,
+        })
+      ),
 
-      // Próximos vencimentos
-      prisma.transacao.findMany({
-        where: {
-          usuarioId,
-          status: { in: ["PENDENTE", "AGENDADO"] },
-          dataCompetencia: { gte: hoje, lte: daquiA7Dias },
-        },
-        orderBy: { dataCompetencia: "asc" },
-        take: 5,
-        select: {
-          id: true,
-          descricao: true,
-          valor: true,
-          tipo: true,
-          status: true,
-          dataCompetencia: true,
-          categoria: { select: { nome: true } },
-        },
-      }),
+      // Próximos vencimentos com retry
+      withRetry(() =>
+        prisma.transacao.findMany({
+          where: {
+            usuarioId,
+            status: { in: ["PENDENTE", "AGENDADO"] },
+            dataCompetencia: { gte: hoje, lte: daquiA7Dias },
+          },
+          orderBy: { dataCompetencia: "asc" },
+          take: 5,
+          select: {
+            id: true,
+            descricao: true,
+            valor: true,
+            tipo: true,
+            status: true,
+            dataCompetencia: true,
+            categoria: { select: { nome: true } },
+          },
+        })
+      ),
 
-      // Contas vencidas
-      prisma.transacao.findMany({
-        where: {
-          usuarioId,
-          status: { in: ["PENDENTE", "AGENDADO"] },
-          dataCompetencia: { lt: hoje },
-          cartaoCreditoId: null,
-        },
-        orderBy: { dataCompetencia: "asc" },
-        take: 10,
-        select: {
-          id: true,
-          descricao: true,
-          valor: true,
-          tipo: true,
-          status: true,
-          dataCompetencia: true,
-          categoria: { select: { nome: true } },
-        },
-      }),
+      // Contas vencidas com retry
+      withRetry(() =>
+        prisma.transacao.findMany({
+          where: {
+            usuarioId,
+            status: { in: ["PENDENTE", "AGENDADO"] },
+            dataCompetencia: { lt: hoje },
+            cartaoCreditoId: null,
+          },
+          orderBy: { dataCompetencia: "asc" },
+          take: 10,
+          select: {
+            id: true,
+            descricao: true,
+            valor: true,
+            tipo: true,
+            status: true,
+            dataCompetencia: true,
+            categoria: { select: { nome: true } },
+          },
+        })
+      ),
 
-      // Faturas vencidas
-      prisma.fatura.findMany({
-        where: {
-          cartao: { usuarioId },
-          status: { in: ["ABERTA", "FECHADA"] },
-          dataVencimento: { lt: hoje },
-        },
-        include: {
-          cartao: { select: { id: true, apelido: true } },
-        },
-        orderBy: { dataVencimento: "asc" },
-        take: 10,
-      }),
+      // Faturas vencidas com retry
+      withRetry(() =>
+        prisma.fatura.findMany({
+          where: {
+            cartao: { usuarioId },
+            status: { in: ["ABERTA", "FECHADA"] },
+            dataVencimento: { lt: hoje },
+          },
+          include: {
+            cartao: { select: { id: true, apelido: true } },
+          },
+          orderBy: { dataVencimento: "asc" },
+          take: 10,
+        })
+      ),
     ]);
 
     // Processar dados agregados

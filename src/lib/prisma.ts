@@ -15,14 +15,14 @@ export const prisma =
       },
     },
     // Configurações para ambientes serverless
-    // Reduz o número de conexões e melhora a performance
+    // Timeouts aumentados para suportar queries paralelas
     // @ts-ignore - Opções específicas para Supabase
     __internal: {
       engine: {
-        // Timeout mais curto para ambientes serverless
-        connectTimeout: 10000,
-        // Pool de conexões otimizado
-        poolTimeout: 10000,
+        // Timeout de conexão aumentado
+        connectTimeout: 20000, // 20s
+        // Pool timeout aumentado para queries paralelas
+        poolTimeout: 20000, // 20s
       },
     },
   });
