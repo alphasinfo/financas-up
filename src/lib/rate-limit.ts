@@ -69,27 +69,27 @@ export function rateLimit(identifier: string, config: RateLimitConfig): {
   };
 }
 
-// Configurações pré-definidas
+// Configurações pré-definidas (limites muito permissivos para desenvolvimento)
 export const RATE_LIMITS = {
   // APIs públicas (login, cadastro)
   PUBLIC: {
-    interval: 15 * 60 * 1000, // 15 minutos
-    maxRequests: 10,
+    interval: 60 * 1000, // 1 minuto
+    maxRequests: 100, // 100 req/min
   },
   // APIs autenticadas
   AUTHENTICATED: {
     interval: 60 * 1000, // 1 minuto
-    maxRequests: 60,
+    maxRequests: 300, // 300 req/min
   },
   // APIs de escrita (POST, PUT, DELETE)
   WRITE: {
     interval: 60 * 1000, // 1 minuto
-    maxRequests: 30,
+    maxRequests: 200, // 200 req/min
   },
   // APIs de leitura (GET)
   READ: {
     interval: 60 * 1000, // 1 minuto
-    maxRequests: 100,
+    maxRequests: 500, // 500 req/min
   },
 };
 

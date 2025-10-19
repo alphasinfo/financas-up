@@ -13,9 +13,9 @@ export function middleware(request: NextRequest) {
   const identifier = getClientIdentifier(request);
   const pathname = request.nextUrl.pathname;
 
-  // Rotas do NextAuth não devem ter rate limiting (ele já tem proteção interna)
-  if (pathname.startsWith('/api/auth/')) {
-    // Pular rate limiting para NextAuth
+  // Rotas sem rate limiting (NextAuth + Dashboard)
+  if (pathname.startsWith('/api/auth/') || pathname.startsWith('/dashboard')) {
+    // Pular rate limiting
     const response = NextResponse.next();
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -26,14 +26,14 @@ export function middleware(request: NextRequest) {
   let rateLimitConfig = RATE_LIMITS.PUBLIC;
 
   if (pathname.startsWith('/api/usuarios/cadastro')) {
-    // Cadastro: muito restritivo
-    rateLimitConfig = { interval: 60 * 60 * 1000, maxRequests: 3 }; // 3 req/hora
+    // Cadastro: restritivo apenas para prevenir spam
+    rateLimitConfig = { interval: 60 * 1000, maxRequests: 10 }; // 10 req/min
   } else if (pathname.startsWith('/api/') && request.method !== 'GET') {
-    // APIs de escrita: restritivo
-    rateLimitConfig = RATE_LIMITS.WRITE;
+    // APIs de escrita: muito permissivo
+    rateLimitConfig = { interval: 60 * 1000, maxRequests: 200 }; // 200 req/min
   } else if (pathname.startsWith('/api/')) {
-    // APIs de leitura: menos restritivo
-    rateLimitConfig = RATE_LIMITS.READ;
+    // APIs de leitura: extremamente permissivo
+    rateLimitConfig = { interval: 60 * 1000, maxRequests: 500 }; // 500 req/min
   }
 
   const limit = rateLimit(identifier, rateLimitConfig);
