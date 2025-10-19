@@ -41,6 +41,8 @@ export async function POST(request: Request) {
 
     const { transacoes } = validacao.data;
 
+    console.log(`[Conciliação] Iniciando importação de ${transacoes.length} transações`);
+
     // Verificar contas ANTES da transação para reduzir tempo de lock
     const contasIds = [...new Set(transacoes.map(t => t.contaBancariaId))];
     const contas = await withRetry(() =>
@@ -52,6 +54,8 @@ export async function POST(request: Request) {
       })
     );
 
+    console.log(`[Conciliação] Encontradas ${contas.length} contas`);
+
     // Validar que todas as contas existem
     for (const contaId of contasIds) {
       if (!contas.find(c => c.id === contaId)) {
@@ -62,69 +66,89 @@ export async function POST(request: Request) {
       }
     }
 
-    // Importar transações com retry e timeout aumentado
-    const resultado = await withRetry(() =>
-      prisma.$transaction(
-        async (tx) => {
-          const transacoesCriadas = [];
+    // Processar em lotes de 50 transações para evitar timeout
+    const TAMANHO_LOTE = 50;
+    const totalLotes = Math.ceil(transacoes.length / TAMANHO_LOTE);
+    const todasTransacoesCriadas = [];
 
-          for (const transacao of transacoes) {
-            const conta = contas.find(c => c.id === transacao.contaBancariaId)!;
+    console.log(`[Conciliação] Processando em ${totalLotes} lotes de até ${TAMANHO_LOTE} transações`);
 
-            // Arredondar valor para evitar problemas de precisão
-            const valorArredondado = arredondarValor(transacao.valor);
+    for (let i = 0; i < totalLotes; i++) {
+      const inicio = i * TAMANHO_LOTE;
+      const fim = Math.min((i + 1) * TAMANHO_LOTE, transacoes.length);
+      const lote = transacoes.slice(inicio, fim);
 
-            // Criar transação
-            const novaTransacao = await tx.transacao.create({
-              data: {
-                descricao: transacao.descricao,
-                valor: valorArredondado,
-                tipo: transacao.tipo,
-                dataCompetencia: transacao.dataCompetencia,
-                dataLiquidacao: transacao.dataCompetencia,
-                status: transacao.tipo === "RECEITA" ? "RECEBIDO" : "PAGO",
-                contaBancariaId: transacao.contaBancariaId,
-                categoriaId: transacao.categoriaId,
-                usuarioId: session.user.id,
-              },
-            });
+      console.log(`[Conciliação] Processando lote ${i + 1}/${totalLotes} (${lote.length} transações)`);
 
-            // Atualizar saldo da conta com arredondamento
-            const novoSaldo = arredondarValor(
-              transacao.tipo === "RECEITA"
-                ? conta.saldoAtual + valorArredondado
-                : conta.saldoAtual - valorArredondado
-            );
+      // Importar lote com retry e timeout aumentado
+      const resultadoLote = await withRetry(() =>
+        prisma.$transaction(
+          async (tx) => {
+            const transacoesCriadas = [];
 
-            const novoSaldoDisponivel = arredondarValor(
-              transacao.tipo === "RECEITA"
-                ? conta.saldoDisponivel + valorArredondado
-                : conta.saldoDisponivel - valorArredondado
-            );
+            for (const transacao of lote) {
+              const conta = contas.find(c => c.id === transacao.contaBancariaId)!;
 
-            await tx.contaBancaria.update({
-              where: { id: transacao.contaBancariaId },
-              data: { 
-                saldoAtual: novoSaldo,
-                saldoDisponivel: novoSaldoDisponivel,
-              },
-            });
+              // Arredondar valor para evitar problemas de precisão
+              const valorArredondado = arredondarValor(transacao.valor);
 
-            // Atualizar saldo local para próximas iterações
-            conta.saldoAtual = novoSaldo;
-            conta.saldoDisponivel = novoSaldoDisponivel;
+              // Criar transação
+              const novaTransacao = await tx.transacao.create({
+                data: {
+                  descricao: transacao.descricao,
+                  valor: valorArredondado,
+                  tipo: transacao.tipo,
+                  dataCompetencia: transacao.dataCompetencia,
+                  dataLiquidacao: transacao.dataCompetencia,
+                  status: transacao.tipo === "RECEITA" ? "RECEBIDO" : "PAGO",
+                  contaBancariaId: transacao.contaBancariaId,
+                  categoriaId: transacao.categoriaId,
+                  usuarioId: session.user.id,
+                },
+              });
 
-            transacoesCriadas.push(novaTransacao);
+              // Atualizar saldo da conta com arredondamento
+              const novoSaldo = arredondarValor(
+                transacao.tipo === "RECEITA"
+                  ? conta.saldoAtual + valorArredondado
+                  : conta.saldoAtual - valorArredondado
+              );
+
+              const novoSaldoDisponivel = arredondarValor(
+                transacao.tipo === "RECEITA"
+                  ? conta.saldoDisponivel + valorArredondado
+                  : conta.saldoDisponivel - valorArredondado
+              );
+
+              await tx.contaBancaria.update({
+                where: { id: transacao.contaBancariaId },
+                data: { 
+                  saldoAtual: novoSaldo,
+                  saldoDisponivel: novoSaldoDisponivel,
+                },
+              });
+
+              // Atualizar saldo local para próximas iterações
+              conta.saldoAtual = novoSaldo;
+              conta.saldoDisponivel = novoSaldoDisponivel;
+
+              transacoesCriadas.push(novaTransacao);
+            }
+
+            return transacoesCriadas;
+          },
+          {
+            maxWait: 30000, // Máximo 30s esperando para iniciar
+            timeout: 120000, // Máximo 2 minutos para executar cada lote
           }
+        )
+      );
 
-          return transacoesCriadas;
-        },
-        {
-          maxWait: 10000, // Máximo 10s esperando para iniciar (dobrado)
-          timeout: 30000, // Máximo 30s para executar (triplicado)
-        }
-      )
-    );
+      todasTransacoesCriadas.push(...resultadoLote);
+      console.log(`[Conciliação] Lote ${i + 1}/${totalLotes} concluído (${resultadoLote.length} transações)`);
+    }
+
+    const resultado = todasTransacoesCriadas;
 
     // Revalidar páginas que usam transações
     revalidatePath('/dashboard');

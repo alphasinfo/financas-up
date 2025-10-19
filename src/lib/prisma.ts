@@ -15,14 +15,14 @@ export const prisma =
       },
     },
     // Configurações para ambientes serverless
-    // Timeouts aumentados para suportar queries paralelas
+    // Timeouts aumentados para suportar importações pesadas e queries paralelas
     // @ts-ignore - Opções específicas para Supabase
     __internal: {
       engine: {
-        // Timeout de conexão aumentado
-        connectTimeout: 20000, // 20s
-        // Pool timeout aumentado para queries paralelas
-        poolTimeout: 20000, // 20s
+        // Timeout de conexão aumentado para importações pesadas
+        connectTimeout: 60000, // 60s (1 minuto)
+        // Pool timeout aumentado para queries paralelas e transações longas
+        poolTimeout: 60000, // 60s (1 minuto)
       },
     },
   });
