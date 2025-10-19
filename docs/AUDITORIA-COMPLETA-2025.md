@@ -10,7 +10,8 @@
 | Métrica | Valor | Status |
 |---------|-------|--------|
 | **Score Geral** | 8.5/10 | ✅ Excelente |
-| **Funcionalidades** | 14/14 (100%) | ✅ |
+| **Funcionalidades Completas** | 12/19 (63%) | ⚠️ |
+| **Funcionalidades Backend** | 19/19 (100%) | ✅ |
 | **Testes** | 233/233 (100%) | ✅ |
 | **Vulnerabilidades Críticas** | 0 | ✅ |
 | **Vulnerabilidades Médias** | 3 | ⚠️ |
