@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('[Insights] Sessão inválida');
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    
+    console.log('[Insights] Buscando insights para usuário:', session.user.id);
 
     // Buscar transações dos últimos 3 meses
     const inicio = startOfMonth(subMonths(new Date(), 3));
@@ -71,8 +74,12 @@ export async function GET(request: Request) {
     ];
 
     return NextResponse.json(insights);
-  } catch (error) {
-    console.error('Erro ao buscar insights:', error);
-    return NextResponse.json({ error: 'Erro ao buscar insights' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Insights] Erro completo:', error);
+    console.error('[Insights] Stack:', error?.stack);
+    return NextResponse.json({ 
+      error: 'Erro ao buscar insights',
+      details: error?.message || 'Erro desconhecido'
+    }, { status: 500 });
   }
 }

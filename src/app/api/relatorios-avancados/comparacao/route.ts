@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('[Comparação] Sessão inválida');
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    
+    console.log('[Comparação] Buscando dados para usuário:', session.user.id);
 
     const { searchParams } = new URL(request.url);
     const meses = parseInt(searchParams.get('meses') || '6');
@@ -49,8 +52,12 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(comparacoes.reverse());
-  } catch (error) {
-    console.error('Erro ao buscar comparações:', error);
-    return NextResponse.json({ error: 'Erro ao buscar comparações' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Comparação] Erro completo:', error);
+    console.error('[Comparação] Stack:', error?.stack);
+    return NextResponse.json({ 
+      error: 'Erro ao buscar comparações',
+      details: error?.message || 'Erro desconhecido'
+    }, { status: 500 });
   }
 }

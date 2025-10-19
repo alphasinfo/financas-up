@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('[Previsões] Sessão inválida');
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    
+    console.log('[Previsões] Buscando dados para usuário:', session.user.id);
 
     const { searchParams } = new URL(request.url);
     const meses = parseInt(searchParams.get('meses') || '3');
@@ -57,8 +60,12 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(previsoes);
-  } catch (error) {
-    console.error('Erro ao buscar previsões:', error);
-    return NextResponse.json({ error: 'Erro ao buscar previsões' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Previsões] Erro completo:', error);
+    console.error('[Previsões] Stack:', error?.stack);
+    return NextResponse.json({ 
+      error: 'Erro ao buscar previsões',
+      details: error?.message || 'Erro desconhecido'
+    }, { status: 500 });
   }
 }

@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     // Permitir filtrar apenas contas ativas via query parameter
     const { searchParams } = new URL(request.url);
     const apenasAtivas = searchParams.get("ativas") === "true";
+    const moeda = searchParams.get("moeda"); // Ignorar por enquanto
 
     const contas = await prisma.contaBancaria.findMany({
       where: { 
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
       orderBy: { criadoEm: "desc" },
     });
 
+    // Por enquanto, retornar contas sem conversão de moeda
     return NextResponse.json(contas);
   } catch (error) {
     console.error("Erro ao buscar contas:", error);
