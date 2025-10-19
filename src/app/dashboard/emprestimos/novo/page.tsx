@@ -78,10 +78,62 @@ export default function NovoEmprestimoPage() {
     }
   };
 
-  const valorParcela =
-    formData.valorTotal && formData.numeroParcelas
-      ? parseFloat(formData.valorTotal) / parseInt(formData.numeroParcelas)
-      : 0;
+  // Calcular valor da parcela com juros
+  const calcularParcela = () => {
+    if (!formData.valorTotal || !formData.numeroParcelas) return null;
+    
+    const valorTotal = parseFloat(formData.valorTotal);
+    const numeroParcelas = parseInt(formData.numeroParcelas);
+    const taxaMensal = formData.taxaJurosMensal ? parseFloat(formData.taxaJurosMensal) / 100 : 0;
+    
+    if (taxaMensal === 0) {
+      // Sem juros - divisão simples
+      return {
+        valorParcela: valorTotal / numeroParcelas,
+        valorTotal: valorTotal,
+        totalJuros: 0,
+        sistema: 'SEM JUROS'
+      };
+    }
+    
+    if (formData.sistemaAmortizacao === 'PRICE') {
+      // Sistema PRICE - Parcelas fixas
+      const valorParcela = valorTotal * (taxaMensal * Math.pow(1 + taxaMensal, numeroParcelas)) / (Math.pow(1 + taxaMensal, numeroParcelas) - 1);
+      const totalPago = valorParcela * numeroParcelas;
+      const totalJuros = totalPago - valorTotal;
+      
+      return {
+        valorParcela,
+        valorTotal: totalPago,
+        totalJuros,
+        sistema: 'PRICE'
+      };
+    } else {
+      // Sistema SAC - Parcelas decrescentes
+      const amortizacao = valorTotal / numeroParcelas;
+      const primeiraParcela = amortizacao + (valorTotal * taxaMensal);
+      const ultimaParcela = amortizacao + (amortizacao * taxaMensal);
+      
+      // Calcular total de juros
+      let totalJuros = 0;
+      let saldoDevedor = valorTotal;
+      for (let i = 0; i < numeroParcelas; i++) {
+        const juros = saldoDevedor * taxaMensal;
+        totalJuros += juros;
+        saldoDevedor -= amortizacao;
+      }
+      
+      return {
+        valorParcela: primeiraParcela,
+        valorParcelaFinal: ultimaParcela,
+        valorTotal: valorTotal + totalJuros,
+        totalJuros,
+        sistema: 'SAC'
+      };
+    }
+  };
+  
+  const dadosParcela = calcularParcela();
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 p-4 md:p-6">
@@ -170,14 +222,6 @@ export default function NovoEmprestimoPage() {
               </div>
             </div>
 
-            {valorParcela > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-900">
-                  <strong>Valor da parcela:</strong> R${" "}
-                  {valorParcela.toFixed(2)}
-                </p>
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label className="text-sm md:text-base" htmlFor="sistemaAmortizacao">Sistema de Amortização *</Label>
@@ -269,13 +313,21 @@ export default function NovoEmprestimoPage() {
               />
             </div>
 
-            {/* Card de Resumo - Valor Estimado da Parcela */}
-            {formData.valorTotal && formData.numeroParcelas && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-                <h3 className="text-sm font-semibold text-blue-900">📊 Estimativa da Parcela</h3>
-                <div className="space-y-1">
+            {/* Card de Resumo - Calculadora de Parcelas */}
+            {dadosParcela && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-blue-900 flex items-center gap-2">
+                    🧮 Calculadora de Parcelas
+                  </h3>
+                  <span className="text-xs font-semibold px-2 py-1 bg-blue-200 text-blue-900 rounded">
+                    {dadosParcela.sistema}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">Valor Total:</span>
+                    <span className="text-blue-700">Valor Emprestado:</span>
                     <span className="font-semibold text-blue-900">
                       R$ {parseFloat(formData.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
@@ -284,24 +336,76 @@ export default function NovoEmprestimoPage() {
                     <span className="text-blue-700">Número de Parcelas:</span>
                     <span className="font-semibold text-blue-900">{formData.numeroParcelas}x</span>
                   </div>
-                  <div className="border-t border-blue-300 my-2"></div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-semibold text-blue-700">Valor Estimado da Parcela:</span>
-                    <span className="text-lg font-bold text-blue-900">
-                      R$ {valorParcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
                   {formData.taxaJurosMensal && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      ⚠️ Valor aproximado sem juros. Com juros de {formData.taxaJurosMensal}% a.m., o valor real será maior.
-                    </p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-700">Taxa de Juros:</span>
+                      <span className="font-semibold text-blue-900">{formData.taxaJurosMensal}% a.m.</span>
+                    </div>
                   )}
-                  {!formData.taxaJurosMensal && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      💡 Adicione a taxa de juros para ver o cálculo exato da parcela.
-                    </p>
+                  
+                  <div className="border-t-2 border-blue-300 my-2"></div>
+                  
+                  {dadosParcela.sistema === 'SAC' ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-semibold text-blue-700">1ª Parcela:</span>
+                        <span className="text-xl font-bold text-blue-900">
+                          R$ {dadosParcela.valorParcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-semibold text-blue-700">Última Parcela:</span>
+                        <span className="text-lg font-bold text-green-700">
+                          R$ {dadosParcela.valorParcelaFinal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-600 italic">
+                        ⬇️ Parcelas decrescem ao longo do tempo
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-semibold text-blue-700">Valor da Parcela:</span>
+                      <span className="text-2xl font-bold text-blue-900">
+                        R$ {dadosParcela.valorParcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {dadosParcela.totalJuros > 0 && (
+                    <>
+                      <div className="border-t border-blue-200 my-2"></div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-blue-700">Total de Juros:</span>
+                        <span className="font-semibold text-orange-600">
+                          R$ {dadosParcela.totalJuros.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-blue-700 font-semibold">Total a Pagar:</span>
+                        <span className="font-bold text-red-600">
+                          R$ {dadosParcela.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
+                
+                {dadosParcela.totalJuros === 0 && (
+                  <div className="bg-green-100 border border-green-300 rounded p-2 mt-2">
+                    <p className="text-xs text-green-800">
+                      ✅ Empréstimo sem juros - Valor da parcela é fixo
+                    </p>
+                  </div>
+                )}
+                
+                {formData.taxaJurosMensal && dadosParcela.totalJuros > 0 && (
+                  <div className="bg-orange-100 border border-orange-300 rounded p-2 mt-2">
+                    <p className="text-xs text-orange-800">
+                      ⚠️ Você pagará R$ {dadosParcela.totalJuros.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} de juros
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

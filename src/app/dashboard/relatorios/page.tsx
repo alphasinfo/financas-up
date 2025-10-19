@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, Download, TrendingUp, TrendingDown, DollarSign, Filter, X } from "lucide-react";
+import { Printer, Download, TrendingUp, TrendingDown, DollarSign, Filter, X, RefreshCw, AlertCircle } from "lucide-react";
 import { formatarMoeda } from "@/lib/formatters";
 import { exportarRelatorioParaPDF, baixarPDF } from "@/lib/pdf-export";
 import { TransacaoItem } from "@/components/transacao-item";
@@ -40,6 +40,7 @@ interface DadosRelatorio {
 export default function RelatoriosPage() {
   const [dados, setDados] = useState<DadosRelatorio | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [mesAno, setMesAno] = useState(() => {
     const hoje = new Date();
     return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
@@ -54,13 +55,25 @@ export default function RelatoriosPage() {
 
   const carregarDados = useCallback(async () => {
     try {
-      const resposta = await fetch(`/api/relatorios?mesAno=${mesAno}`, { cache: 'no-store' });
-      if (resposta.ok) {
-        const dadosCarregados = await resposta.json();
-        setDados(dadosCarregados);
+      setCarregando(true);
+      setErro(null);
+      
+      const resposta = await fetch(`/api/relatorios?mesAno=${mesAno}`, { 
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!resposta.ok) {
+        throw new Error(`Erro ao carregar relatórios: ${resposta.status}`);
       }
-    } catch (error) {
+      
+      const dadosCarregados = await resposta.json();
+      setDados(dadosCarregados);
+    } catch (error: any) {
       console.error("Erro ao carregar relatórios:", error);
+      setErro(error.message || "Erro ao carregar relatórios");
     } finally {
       setCarregando(false);
     }
@@ -104,10 +117,38 @@ export default function RelatoriosPage() {
     baixarPDF(doc, `relatorio-${mesAno}.pdf`);
   };
 
-  if (carregando || !dados) {
+  if (carregando) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
         <p className="text-gray-500">Carregando relatórios...</p>
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-600" />
+        <p className="text-gray-900 font-semibold">Erro ao carregar relatórios</p>
+        <p className="text-gray-500 text-sm">{erro}</p>
+        <Button onClick={carregarDados}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Tentar Novamente
+        </Button>
+      </div>
+    );
+  }
+
+  if (!dados) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <AlertCircle className="h-12 w-12 text-gray-400" />
+        <p className="text-gray-500">Nenhum dado disponível</p>
+        <Button onClick={carregarDados}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Recarregar
+        </Button>
       </div>
     );
   }
