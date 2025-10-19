@@ -191,7 +191,7 @@ export async function gerarInsights(userId: string): Promise<InsightFinanceiro[]
     }
 
     const mesAtual = comparacao[comparacao.length - 1];
-    const mesAnterior = comparacao[comparacao.length - 2];
+    const _mesAnterior = comparacao[comparacao.length - 2];
 
     // Insight 1: Crescimento de receita
     if (mesAtual.crescimentoReceita > 10) {
