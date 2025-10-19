@@ -29,6 +29,8 @@ export function Header() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingSync, setPendingSync] = useState(0);
   const [moedaSelecionada, setMoedaSelecionada] = useState('BRL');
+  const [saldoTotal, setSaldoTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Monitorar status online/offline
@@ -40,20 +42,46 @@ export function Header() {
 
     // Verificar operações pendentes
     verificarPendencias();
+    
+    // Buscar saldo total
+    buscarSaldoTotal();
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+  
+  useEffect(() => {
+    // Atualizar saldo quando moeda mudar
+    buscarSaldoTotal();
+  }, [moedaSelecionada]);
 
   async function verificarPendencias() {
     try {
       const response = await fetch('/api/sync/pendencias');
-      const data = await response.json();
-      setPendingSync(data.quantidade || 0);
+      if (response.ok) {
+        const data = await response.json();
+        setPendingSync(data.quantidade || 0);
+      }
     } catch (error) {
-      console.error('Erro ao verificar pendências:', error);
+      // Silencioso - API opcional
+    }
+  }
+  
+  async function buscarSaldoTotal() {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/contas?moeda=${moedaSelecionada}`);
+      if (response.ok) {
+        const contas = await response.json();
+        const total = contas.reduce((acc: number, conta: any) => acc + (conta.saldo || 0), 0);
+        setSaldoTotal(total);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar saldo:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -95,19 +123,27 @@ export function Header() {
             </div>
           )}
 
-          {/* Seletor de Moeda */}
-          <Select value={moedaSelecionada} onValueChange={handleMoedaChange}>
-            <SelectTrigger className="w-[100px] md:w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MOEDAS.map((moeda) => (
-                <SelectItem key={moeda.codigo} value={moeda.codigo}>
-                  {moeda.simbolo} {moeda.codigo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Saldo Total e Seletor de Moeda */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg">
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Saldo Total</div>
+              <div className="text-sm font-bold text-blue-600">
+                {loading ? '...' : `${MOEDAS.find(m => m.codigo === moedaSelecionada)?.simbolo} ${saldoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              </div>
+            </div>
+            <Select value={moedaSelecionada} onValueChange={handleMoedaChange}>
+              <SelectTrigger className="w-[80px] border-0 bg-transparent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MOEDAS.map((moeda) => (
+                  <SelectItem key={moeda.codigo} value={moeda.codigo}>
+                    {moeda.simbolo} {moeda.codigo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Notificacoes />
           <UserMenu />

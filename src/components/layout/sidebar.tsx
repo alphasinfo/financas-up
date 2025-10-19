@@ -90,11 +90,6 @@ const menuItems = [
     href: "/dashboard/relatorios-avancados",
     icone: BarChart3,
   },
-  {
-    titulo: "Backup",
-    href: "/dashboard/backup",
-    icone: Database,
-  },
 ];
 
 export function Sidebar() {
