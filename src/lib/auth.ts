@@ -27,12 +27,47 @@ export const authOptions: AuthOptions = {
             console.log('🔍 Buscando usuário:', credentials.email);
           }
 
-          const usuario = await prisma.usuario.findUnique({
-            where: { email: credentials.email }
-          });
+          // Tentar conectar ao banco com retry
+          let usuario = null;
+          let retries = 3;
+          let lastError = null;
+
+          while (retries > 0 && !usuario) {
+            try {
+              usuario = await prisma.usuario.findUnique({
+                where: { email: credentials.email }
+              });
+              break;
+            } catch (error: any) {
+              lastError = error;
+              retries--;
+              
+              // Se for erro de conexão, tentar reconectar
+              if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+                console.error(`❌ Erro de conexão com banco (tentativas restantes: ${retries}):`, error.message);
+                
+                if (retries > 0) {
+                  // Aguardar antes de tentar novamente
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  
+                  // Tentar reconectar
+                  try {
+                    await prisma.$connect();
+                  } catch (connectError) {
+                    console.error('❌ Erro ao reconectar:', connectError);
+                  }
+                }
+              } else {
+                // Outro tipo de erro, não tentar novamente
+                throw error;
+              }
+            }
+          }
 
           if (!usuario) {
-            if (process.env.NODE_ENV === 'development') {
+            if (lastError) {
+              console.error('❌ Falha após múltiplas tentativas:', lastError);
+            } else if (process.env.NODE_ENV === 'development') {
               console.log('❌ Usuário não encontrado:', credentials.email);
             }
             return null;
@@ -68,8 +103,15 @@ export const authOptions: AuthOptions = {
             name: usuario.nome,
             image: usuario.imagem || undefined,
           };
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Erro no authorize:', error);
+          
+          // Log mais detalhado para erros de conexão
+          if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+            console.error('❌ Erro de conexão com banco de dados');
+            console.error('DATABASE_URL configurada:', process.env.DATABASE_URL ? 'Sim' : 'Não');
+          }
+          
           return null;
         }
       }
