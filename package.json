@@ -13,6 +13,8 @@
     "test:detailed": "node scripts/test-detailed.js",
     "test:coverage:open": "jest --coverage && start coverage/lcov-report/index.html",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "pre-commit": "node scripts/pre-commit.js",
+    "verify": "npm test && npm run build",
     "postinstall": "prisma generate",
     "seed": "tsx prisma/seed.ts",
     "verificar-usuarios": "tsx scripts/verificar-usuarios.ts",
