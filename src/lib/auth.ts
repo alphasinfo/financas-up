@@ -1,10 +1,22 @@
 import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
 export const authOptions: AuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
+    }),
     CredentialsProvider({
       id: "credentials",
       name: "Credenciais",
@@ -131,7 +143,18 @@ export const authOptions: AuthOptions = {
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ JWT callback - Adicionando user ao token:', user.email);
         }
-        token.id = user.id;
+        
+        // Se for login com Google, buscar ID do banco
+        if (account?.provider === "google" && user.email) {
+          const usuarioDB = await prisma.usuario.findUnique({
+            where: { email: user.email },
+            select: { id: true }
+          });
+          token.id = usuarioDB?.id || user.id;
+        } else {
+          token.id = user.id;
+        }
+        
         token.email = user.email;
         // Armazenar timestamp de criação do token
         if (!token.createdAt) {
@@ -153,7 +176,46 @@ export const authOptions: AuthOptions = {
     async signIn({ user, account, profile }) {
       if (process.env.NODE_ENV === 'development') {
         console.log('✅ SignIn callback - Usuário autenticado:', user.email);
+        console.log('Provider:', account?.provider);
       }
+
+      // Se for login com Google, criar usuário automaticamente se não existir
+      if (account?.provider === "google" && user.email) {
+        try {
+          const usuarioExistente = await prisma.usuario.findUnique({
+            where: { email: user.email }
+          });
+
+          if (!usuarioExistente) {
+            // Criar novo usuário
+            await prisma.usuario.create({
+              data: {
+                email: user.email,
+                nome: user.name || user.email.split('@')[0],
+                imagem: user.image,
+                // Senha null para usuários OAuth
+                senha: null,
+              }
+            });
+
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Novo usuário criado via Google:', user.email);
+            }
+          } else {
+            // Atualizar imagem se mudou
+            if (user.image && user.image !== usuarioExistente.imagem) {
+              await prisma.usuario.update({
+                where: { email: user.email },
+                data: { imagem: user.image }
+              });
+            }
+          }
+        } catch (error) {
+          console.error('❌ Erro ao criar/atualizar usuário Google:', error);
+          return false;
+        }
+      }
+
       return true; // Permitir login
     },
   },

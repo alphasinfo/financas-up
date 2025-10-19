@@ -41,7 +41,8 @@
     "resetar-senhas-supabase": "tsx scripts/resetar-senhas-supabase.ts",
     "testar-login": "tsx scripts/testar-login.ts",
     "gerar-secret": "node scripts/gerar-nextauth-secret.js",
-    "configurar-env": "node scripts/configurar-env.js"
+    "configurar-env": "node scripts/configurar-env.js",
+    "gerar-dados-teste": "tsx scripts/gerar-dados-teste.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
