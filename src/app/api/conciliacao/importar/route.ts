@@ -40,67 +40,86 @@ export async function POST(request: Request) {
 
     const { transacoes } = validacao.data;
 
-    // Importar transações em uma transação do banco
-    const resultado = await prisma.$transaction(async (tx) => {
-      const transacoesCriadas = [];
+    // Verificar contas ANTES da transação para reduzir tempo de lock
+    const contasIds = [...new Set(transacoes.map(t => t.contaBancariaId))];
+    const contas = await prisma.contaBancaria.findMany({
+      where: {
+        id: { in: contasIds },
+        usuarioId: session.user.id,
+      },
+    });
 
-      for (const transacao of transacoes) {
-        // Verificar se a conta existe e pertence ao usuário
-        const conta = await tx.contaBancaria.findFirst({
-          where: {
-            id: transacao.contaBancariaId,
-            usuarioId: session.user.id,
-          },
-        });
+    // Validar que todas as contas existem
+    for (const contaId of contasIds) {
+      if (!contas.find(c => c.id === contaId)) {
+        return NextResponse.json(
+          { erro: `Conta bancária não encontrada: ${contaId}` },
+          { status: 400 }
+        );
+      }
+    }
 
-        if (!conta) {
-          throw new Error(`Conta bancária não encontrada: ${transacao.contaBancariaId}`);
+    // Importar transações em uma transação do banco com timeout otimizado
+    const resultado = await prisma.$transaction(
+      async (tx) => {
+        const transacoesCriadas = [];
+
+        for (const transacao of transacoes) {
+          const conta = contas.find(c => c.id === transacao.contaBancariaId)!;
+
+          // Arredondar valor para evitar problemas de precisão
+          const valorArredondado = arredondarValor(transacao.valor);
+
+          // Criar transação
+          const novaTransacao = await tx.transacao.create({
+            data: {
+              descricao: transacao.descricao,
+              valor: valorArredondado,
+              tipo: transacao.tipo,
+              dataCompetencia: transacao.dataCompetencia,
+              dataLiquidacao: transacao.dataCompetencia,
+              status: transacao.tipo === "RECEITA" ? "RECEBIDO" : "PAGO",
+              contaBancariaId: transacao.contaBancariaId,
+              categoriaId: transacao.categoriaId,
+              usuarioId: session.user.id,
+            },
+          });
+
+          // Atualizar saldo da conta com arredondamento
+          const novoSaldo = arredondarValor(
+            transacao.tipo === "RECEITA"
+              ? conta.saldoAtual + valorArredondado
+              : conta.saldoAtual - valorArredondado
+          );
+
+          const novoSaldoDisponivel = arredondarValor(
+            transacao.tipo === "RECEITA"
+              ? conta.saldoDisponivel + valorArredondado
+              : conta.saldoDisponivel - valorArredondado
+          );
+
+          await tx.contaBancaria.update({
+            where: { id: transacao.contaBancariaId },
+            data: { 
+              saldoAtual: novoSaldo,
+              saldoDisponivel: novoSaldoDisponivel,
+            },
+          });
+
+          // Atualizar saldo local para próximas iterações
+          conta.saldoAtual = novoSaldo;
+          conta.saldoDisponivel = novoSaldoDisponivel;
+
+          transacoesCriadas.push(novaTransacao);
         }
 
-        // Arredondar valor para evitar problemas de precisão
-        const valorArredondado = arredondarValor(transacao.valor);
-
-        // Criar transação
-        const novaTransacao = await tx.transacao.create({
-          data: {
-            descricao: transacao.descricao,
-            valor: valorArredondado,
-            tipo: transacao.tipo,
-            dataCompetencia: transacao.dataCompetencia,
-            dataLiquidacao: transacao.dataCompetencia,
-            status: transacao.tipo === "RECEITA" ? "RECEBIDO" : "PAGO",
-            contaBancariaId: transacao.contaBancariaId,
-            categoriaId: transacao.categoriaId,
-            usuarioId: session.user.id,
-          },
-        });
-
-        // Atualizar saldo da conta com arredondamento
-        const novoSaldo = arredondarValor(
-          transacao.tipo === "RECEITA"
-            ? conta.saldoAtual + valorArredondado
-            : conta.saldoAtual - valorArredondado
-        );
-
-        const novoSaldoDisponivel = arredondarValor(
-          transacao.tipo === "RECEITA"
-            ? conta.saldoDisponivel + valorArredondado
-            : conta.saldoDisponivel - valorArredondado
-        );
-
-        await tx.contaBancaria.update({
-          where: { id: transacao.contaBancariaId },
-          data: { 
-            saldoAtual: novoSaldo,
-            saldoDisponivel: novoSaldoDisponivel,
-          },
-        });
-
-        transacoesCriadas.push(novaTransacao);
+        return transacoesCriadas;
+      },
+      {
+        maxWait: 5000, // Máximo 5s esperando para iniciar
+        timeout: 10000, // Máximo 10s para executar
       }
-
-      return transacoesCriadas;
-    });
+    );
 
     // Revalidar páginas que usam transações
     revalidatePath('/dashboard');

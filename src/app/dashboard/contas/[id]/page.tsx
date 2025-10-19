@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 import { formatarMoeda, formatarData } from "@/lib/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,30 +13,35 @@ import { notFound } from "next/navigation";
 import { TransacaoItem } from "@/components/transacao-item";
 
 async function getContaDetalhes(contaId: string, usuarioId: string) {
-  const conta = await prisma.contaBancaria.findFirst({
-    where: {
-      id: contaId,
-      usuarioId,
-    },
-  });
+  // Usar retry para queries do Prisma
+  const conta = await withRetry(() =>
+    prisma.contaBancaria.findFirst({
+      where: {
+        id: contaId,
+        usuarioId,
+      },
+    })
+  );
 
   if (!conta) {
     return null;
   }
 
-  // Buscar transações da conta
-  const transacoes = await prisma.transacao.findMany({
-    where: {
-      contaBancariaId: contaId,
-      usuarioId,
-    },
-    orderBy: { dataCompetencia: "desc" },
-    take: 50,
-    include: {
-      categoria: true,
-      contaBancaria: true,
-    },
-  });
+  // Buscar transações da conta com retry
+  const transacoes = await withRetry(() =>
+    prisma.transacao.findMany({
+      where: {
+        contaBancariaId: contaId,
+        usuarioId,
+      },
+      orderBy: { dataCompetencia: "desc" },
+      take: 50,
+      include: {
+        categoria: true,
+        contaBancaria: true,
+      },
+    })
+  );
 
   // Calcular estatísticas
   const totalReceitas = transacoes
