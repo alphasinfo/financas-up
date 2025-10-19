@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 import { z } from "zod";
 
 const cartaoSchema = z.object({
@@ -29,12 +30,14 @@ export async function GET(
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
-    const cartao = await prisma.cartaoCredito.findFirst({
-      where: {
-        id: params.id,
-        usuarioId: session.user.id,
-      },
-    });
+    const cartao = await withRetry(() =>
+      prisma.cartaoCredito.findFirst({
+        where: {
+          id: params.id,
+          usuarioId: session.user.id,
+        },
+      })
+    );
 
     if (!cartao) {
       return NextResponse.json({ erro: "Cartão não encontrado" }, { status: 404 });
@@ -74,12 +77,14 @@ export async function PUT(
     const dados = validacao.data;
 
     // Verificar se o cartão pertence ao usuário
-    const cartaoExistente = await prisma.cartaoCredito.findFirst({
-      where: {
-        id: params.id,
-        usuarioId: session.user.id,
-      },
-    });
+    const cartaoExistente = await withRetry(() =>
+      prisma.cartaoCredito.findFirst({
+        where: {
+          id: params.id,
+          usuarioId: session.user.id,
+        },
+      })
+    );
 
     if (!cartaoExistente) {
       return NextResponse.json({ erro: "Cartão não encontrado" }, { status: 404 });

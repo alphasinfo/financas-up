@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 import { z } from "zod";
 
 const pagamentoSchema = z.object({
@@ -37,17 +38,19 @@ export async function POST(
     const faturaId = params.id;
 
     // Buscar fatura
-    const fatura = await prisma.fatura.findFirst({
-      where: {
-        id: faturaId,
-        cartao: {
-          usuarioId: session.user.id,
+    const fatura = await withRetry(() =>
+      prisma.fatura.findFirst({
+        where: {
+          id: faturaId,
+          cartao: {
+            usuarioId: session.user.id,
+          },
         },
-      },
-      include: {
-        cartao: true,
-      },
-    });
+        include: {
+          cartao: true,
+        },
+      })
+    );
 
     if (!fatura) {
       return NextResponse.json({ erro: "Fatura não encontrada" }, { status: 404 });
@@ -70,13 +73,15 @@ export async function POST(
     const novoValorPago = fatura.valorPago + dados.valorPago;
     const novoStatus = novoValorPago >= fatura.valorTotal ? "PAGA" : "PARCIAL";
 
-    const faturaAtualizada = await prisma.fatura.update({
-      where: { id: faturaId },
-      data: {
-        valorPago: novoValorPago,
-        status: novoStatus,
-      },
-    });
+    const faturaAtualizada = await withRetry(() =>
+      prisma.fatura.update({
+        where: { id: faturaId },
+        data: {
+          valorPago: novoValorPago,
+          status: novoStatus,
+        },
+      })
+    );
 
     // Liberar limite do cartão proporcionalmente ao valor pago
     await prisma.cartaoCredito.update({

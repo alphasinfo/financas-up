@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/prisma-retry";
 import { z } from "zod";
 
 const pagamentoSchema = z.object({
@@ -37,12 +38,14 @@ export async function POST(
     const emprestimoId = params.id;
 
     // Buscar empréstimo
-    const emprestimo = await prisma.emprestimo.findFirst({
-      where: {
-        id: emprestimoId,
-        usuarioId: session.user.id,
-      },
-    });
+    const emprestimo = await withRetry(() =>
+      prisma.emprestimo.findFirst({
+        where: {
+          id: emprestimoId,
+          usuarioId: session.user.id,
+        },
+      })
+    );
 
     if (!emprestimo) {
       return NextResponse.json({ erro: "Empréstimo não encontrado" }, { status: 404 });
@@ -70,13 +73,15 @@ export async function POST(
     // Atualizar empréstimo
     const novoStatus = novasParcelasPagas >= emprestimo.numeroParcelas ? "QUITADO" : "ATIVO";
     
-    const emprestimoAtualizado = await prisma.emprestimo.update({
-      where: { id: emprestimoId },
-      data: {
-        parcelasPagas: novasParcelasPagas,
-        status: novoStatus,
-      },
-    });
+    const emprestimoAtualizado = await withRetry(() =>
+      prisma.emprestimo.update({
+        where: { id: emprestimoId },
+        data: {
+          parcelasPagas: novasParcelasPagas,
+          status: novoStatus,
+        },
+      })
+    );
 
     // Criar parcelas de empréstimo pagas
     for (let i = 0; i < parcelasAPagar; i++) {
