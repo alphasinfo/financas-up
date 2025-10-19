@@ -2,12 +2,12 @@
 
 > Sistema completo de gestão financeira pessoal e empresarial com recursos avançados
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748)](https://www.prisma.io/)
-[![Tests](https://img.shields.io/badge/Tests-233%20passing-success)](/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2.18-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-blue)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.22.0-2D3748)](https://www.prisma.io/)
+[![Tests](https://img.shields.io/badge/Tests-256%20passing-success)](/)
+[![Deploy](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ---
 
@@ -83,8 +83,9 @@
 - ✅ Dashboard interativo
 - ✅ Gráficos de receitas vs despesas
 - ✅ Análise por categoria
-- ✅ Insights automáticos
-- ✅ Exportação de dados
+- ✅ Insights automáticos com IA
+- ✅ Relatórios avançados (comparação, previsões)
+- ✅ Exportação de dados (PDF, CSV, Excel)
 
 ### 🔄 Conciliação Bancária
 - ✅ Importação de extratos (CSV, OFX, XML, CNAB)
@@ -157,13 +158,21 @@ Acesse: **http://localhost:3000**
 
 ## 📚 Documentação
 
-- ⚡ **[Início Rápido](docs/sistema/INICIO-RAPIDO.md)** - Comece em 5 minutos
-- 📘 **[Instalação](docs/sistema/INSTALACAO.md)** - Guia completo de instalação
-- 📖 **[Como Usar](docs/sistema/COMO_USAR.md)** - Como usar o sistema
-- ⚙️ **[Configuração](docs/sistema/CONFIGURACAO.md)** - Configurações do sistema
-- 📜 **[Comandos](docs/scripts/COMANDOS-DISPONIVEIS.md)** - Scripts e comandos disponíveis
+### 📖 Documentação Completa
 
-**Ver todos:** [docs/INDICE-DOCUMENTACAO.md](docs/INDICE-DOCUMENTACAO.md)
+- 📊 **[Relatório Completo do Projeto](docs/00-RELATORIO-COMPLETO-PROJETO.md)** - Visão geral completa
+- ⚡ **[Início Rápido](docs/01-INICIO-RAPIDO.md)** - Comece em 5 minutos
+- 📘 **[Instalação Completa](docs/02-INSTALACAO-COMPLETA.md)** - Guia detalhado
+- ⚙️ **[Configuração do Sistema](docs/03-CONFIGURACAO-SISTEMA.md)** - Todas as configurações
+- 📖 **[Modo de Uso](docs/04-MODO-DE-USO.md)** - Como usar o sistema
+- 🏗️ **[Arquitetura Técnica](docs/05-ARQUITETURA-TECNICA.md)** - Arquitetura detalhada
+- 🔌 **[APIs e Endpoints](docs/06-APIS-ENDPOINTS.md)** - Documentação de APIs
+- 🗄️ **[Banco de Dados](docs/07-BANCO-DE-DADOS.md)** - Schema e queries
+- 🧪 **[Testes e Qualidade](docs/08-TESTES-QUALIDADE.md)** - Testes e QA
+- 🔧 **[Scripts e Comandos](docs/09-SCRIPTS-COMANDOS.md)** - Scripts disponíveis
+- 🚀 **[Deploy e Produção](docs/10-DEPLOY-PRODUCAO.md)** - Deploy e CI/CD
+
+**Ver índice completo:** [docs/INDICE-DOCUMENTACAO.md](docs/INDICE-DOCUMENTACAO.md)
 
 ---
 
@@ -187,15 +196,6 @@ O projeto inclui scripts automatizados para diferentes sistemas operacionais:
 - ✅ Opção de popular banco com dados de teste
 
 📚 **[Documentação completa de scripts](docs/scripts/README.md)**
-
----
-
-## 📚 Documentação Original
-
-- 📘 **[CONFIGURACAO.md (Original)](CONFIGURACAO.md)** - Configuração completa (Local + Supabase + Vercel)
-- 📖 **[COMO_USAR.md](COMO_USAR.md)** - Guia completo de uso do sistema
-- 🔧 **[SCRIPTS.md](SCRIPTS.md)** - Comandos e scripts úteis
-- 📧 **[EMAIL_RELATORIOS.md](EMAIL_RELATORIOS.md)** - Configurar envio automático de relatórios
 
 ---
 
