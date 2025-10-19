@@ -35,6 +35,24 @@ interface DadosRelatorio {
     dataCompetencia: string;
     categoria: { nome: string } | null;
   }>;
+  comparacao?: {
+    mesAtual: { receitas: number; despesas: number; saldo: number };
+    mesAnterior: { receitas: number; despesas: number; saldo: number };
+    variacao: { receitas: number; despesas: number; saldo: number };
+  };
+  previsoes?: Array<{
+    mes: string;
+    receitaPrevista: number;
+    despesaPrevista: number;
+    saldoPrevisto: number;
+    confianca: number;
+  }>;
+  insights?: Array<{
+    tipo: 'positivo' | 'negativo' | 'neutro';
+    titulo: string;
+    descricao: string;
+    valor?: number;
+  }>;
 }
 
 export default function RelatoriosPage() {
@@ -302,10 +320,13 @@ export default function RelatoriosPage() {
 
       {/* Abas com Gráficos */}
       <Tabs defaultValue="geral" className="space-y-4">
-        <TabsList className="no-print">
+        <TabsList className="no-print grid grid-cols-3 md:grid-cols-7 gap-1">
           <TabsTrigger value="geral">Geral</TabsTrigger>
-          <TabsTrigger value="categorias">Por Categoria</TabsTrigger>
+          <TabsTrigger value="categorias">Categorias</TabsTrigger>
           <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+          <TabsTrigger value="comparacao">Comparação</TabsTrigger>
+          <TabsTrigger value="previsoes">Previsões</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="transacoes">Transações</TabsTrigger>
         </TabsList>
 
@@ -363,6 +384,161 @@ export default function RelatoriosPage() {
               <LazyChart type="line" data={dadosEvolucaoMensal} options={opcoes} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="comparacao" className="space-y-4">
+          {dados.comparacao && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Mês Atual vs Anterior</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                      <span className="text-sm font-medium">Receitas</span>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">{formatarMoeda(dados.comparacao.mesAtual.receitas)}</p>
+                        <p className={`text-xs ${dados.comparacao.variacao.receitas >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {dados.comparacao.variacao.receitas >= 0 ? '↑' : '↓'} {Math.abs(dados.comparacao.variacao.receitas).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                      <span className="text-sm font-medium">Despesas</span>
+                      <div className="text-right">
+                        <p className="font-bold text-red-600">{formatarMoeda(dados.comparacao.mesAtual.despesas)}</p>
+                        <p className={`text-xs ${dados.comparacao.variacao.despesas <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {dados.comparacao.variacao.despesas >= 0 ? '↑' : '↓'} {Math.abs(dados.comparacao.variacao.despesas).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                      <span className="text-sm font-medium">Saldo</span>
+                      <div className="text-right">
+                        <p className={`font-bold ${dados.comparacao.mesAtual.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatarMoeda(dados.comparacao.mesAtual.saldo)}
+                        </p>
+                        <p className={`text-xs ${dados.comparacao.variacao.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {dados.comparacao.variacao.saldo >= 0 ? '↑' : '↓'} {Math.abs(dados.comparacao.variacao.saldo).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Análise de Variação</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {dados.comparacao.variacao.receitas !== 0 && (
+                      <div className={`p-3 rounded-lg ${dados.comparacao.variacao.receitas >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <p className="text-sm font-medium mb-1">Receitas</p>
+                        <p className="text-xs text-gray-600">
+                          {dados.comparacao.variacao.receitas >= 0 ? 'Aumentaram' : 'Diminuíram'} {Math.abs(dados.comparacao.variacao.receitas).toFixed(1)}% em relação ao mês anterior
+                        </p>
+                      </div>
+                    )}
+                    {dados.comparacao.variacao.despesas !== 0 && (
+                      <div className={`p-3 rounded-lg ${dados.comparacao.variacao.despesas <= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                        <p className="text-sm font-medium mb-1">Despesas</p>
+                        <p className="text-xs text-gray-600">
+                          {dados.comparacao.variacao.despesas >= 0 ? 'Aumentaram' : 'Diminuíram'} {Math.abs(dados.comparacao.variacao.despesas).toFixed(1)}% em relação ao mês anterior
+                        </p>
+                      </div>
+                    )}
+                    {dados.comparacao.variacao.saldo !== 0 && (
+                      <div className={`p-3 rounded-lg ${dados.comparacao.variacao.saldo >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <p className="text-sm font-medium mb-1">Saldo</p>
+                        <p className="text-xs text-gray-600">
+                          {dados.comparacao.variacao.saldo >= 0 ? 'Melhorou' : 'Piorou'} {Math.abs(dados.comparacao.variacao.saldo).toFixed(1)}% em relação ao mês anterior
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="previsoes" className="space-y-4">
+          {dados.previsoes && dados.previsoes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Previsões para os Próximos Meses</CardTitle>
+                <p className="text-sm text-gray-500">Baseado na média dos últimos 3 meses</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {dados.previsoes.map((previsao, index) => (
+                    <div key={index} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold capitalize">{previsao.mes}</h3>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                          {previsao.confianca}% confiança
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 text-xs">Receitas</p>
+                          <p className="font-semibold text-green-600">{formatarMoeda(previsao.receitaPrevista)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Despesas</p>
+                          <p className="font-semibold text-red-600">{formatarMoeda(previsao.despesaPrevista)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Saldo</p>
+                          <p className={`font-semibold ${previsao.saldoPrevisto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatarMoeda(previsao.saldoPrevisto)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-4">
+          {dados.insights && dados.insights.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {dados.insights.map((insight, index) => (
+                <Card key={index} className={
+                  insight.tipo === 'positivo' ? 'border-green-200 bg-green-50' :
+                  insight.tipo === 'negativo' ? 'border-red-200 bg-red-50' :
+                  'border-blue-200 bg-blue-50'
+                }>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {insight.tipo === 'positivo' && <TrendingUp className="h-5 w-5 text-green-600" />}
+                      {insight.tipo === 'negativo' && <TrendingDown className="h-5 w-5 text-red-600" />}
+                      {insight.tipo === 'neutro' && <DollarSign className="h-5 w-5 text-blue-600" />}
+                      {insight.titulo}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-700 mb-2">{insight.descricao}</p>
+                    {insight.valor !== undefined && (
+                      <p className={`text-lg font-bold ${
+                        insight.tipo === 'positivo' ? 'text-green-600' :
+                        insight.tipo === 'negativo' ? 'text-red-600' :
+                        'text-blue-600'
+                      }`}>
+                        {formatarMoeda(insight.valor)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="transacoes" className="space-y-4">

@@ -148,6 +148,133 @@ export async function GET(request: Request) {
       });
     }
 
+    // COMPARAÇÃO COM MÊS ANTERIOR
+    const mesAnteriorInicio = new Date(inicioMes);
+    mesAnteriorInicio.setMonth(mesAnteriorInicio.getMonth() - 1);
+    const mesAnteriorFim = new Date(fimMes);
+    mesAnteriorFim.setMonth(mesAnteriorFim.getMonth() - 1);
+
+    const transacoesMesAnterior = await prisma.transacao.findMany({
+      where: {
+        usuarioId: session.user.id,
+        dataCompetencia: {
+          gte: mesAnteriorInicio,
+          lte: mesAnteriorFim,
+        },
+      },
+    });
+
+    const receitasMesAnterior = transacoesMesAnterior
+      .filter((t) => t.tipo === "RECEITA" && (t.status === "RECEBIDO" || t.status === "PAGO"))
+      .reduce((acc, t) => acc + t.valor, 0);
+
+    const despesasMesAnterior = transacoesMesAnterior
+      .filter((t) => t.tipo === "DESPESA" && t.status === "PAGO")
+      .reduce((acc, t) => acc + t.valor, 0);
+
+    const saldoMesAnterior = receitasMesAnterior - despesasMesAnterior;
+
+    const comparacao = {
+      mesAtual: { receitas: receitasMes, despesas: despesasMes, saldo: saldoMes },
+      mesAnterior: { receitas: receitasMesAnterior, despesas: despesasMesAnterior, saldo: saldoMesAnterior },
+      variacao: {
+        receitas: receitasMesAnterior > 0 ? ((receitasMes - receitasMesAnterior) / receitasMesAnterior) * 100 : 0,
+        despesas: despesasMesAnterior > 0 ? ((despesasMes - despesasMesAnterior) / despesasMesAnterior) * 100 : 0,
+        saldo: saldoMesAnterior !== 0 ? ((saldoMes - saldoMesAnterior) / Math.abs(saldoMesAnterior)) * 100 : 0,
+      },
+    };
+
+    // PREVISÕES (baseadas na média dos últimos 3 meses)
+    const previsoes = [];
+    const mediaReceitas = evolucaoMensal.slice(-3).reduce((acc, m) => acc + m.receitas, 0) / 3;
+    const mediaDespesas = evolucaoMensal.slice(-3).reduce((acc, m) => acc + m.despesas, 0) / 3;
+
+    for (let i = 1; i <= 3; i++) {
+      const dataPrevisao = new Date();
+      dataPrevisao.setMonth(dataPrevisao.getMonth() + i);
+      
+      previsoes.push({
+        mes: dataPrevisao.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+        receitaPrevista: mediaReceitas,
+        despesaPrevista: mediaDespesas,
+        saldoPrevisto: mediaReceitas - mediaDespesas,
+        confianca: 70 - (i * 10), // Confiança diminui com o tempo
+      });
+    }
+
+    // INSIGHTS AUTOMÁTICOS
+    const insights = [];
+
+    // Insight 1: Comparação com mês anterior
+    if (saldoMes > saldoMesAnterior) {
+      insights.push({
+        tipo: 'positivo',
+        titulo: 'Saldo melhorou!',
+        descricao: `Seu saldo aumentou ${Math.abs(comparacao.variacao.saldo).toFixed(1)}% em relação ao mês anterior`,
+        valor: saldoMes - saldoMesAnterior,
+      });
+    } else if (saldoMes < saldoMesAnterior) {
+      insights.push({
+        tipo: 'negativo',
+        titulo: 'Saldo piorou',
+        descricao: `Seu saldo diminuiu ${Math.abs(comparacao.variacao.saldo).toFixed(1)}% em relação ao mês anterior`,
+        valor: saldoMes - saldoMesAnterior,
+      });
+    }
+
+    // Insight 2: Categoria com mais gastos
+    if (despesasPorCategoria.length > 0) {
+      const maiorGasto = despesasPorCategoria.reduce((max, cat) => cat.valor > max.valor ? cat : max);
+      const percentual = (maiorGasto.valor / despesasMes) * 100;
+      
+      insights.push({
+        tipo: 'neutro',
+        titulo: `Maior gasto: ${maiorGasto.categoria}`,
+        descricao: `Representa ${percentual.toFixed(1)}% das suas despesas`,
+        valor: maiorGasto.valor,
+      });
+    }
+
+    // Insight 3: Economia ou déficit
+    if (saldoMes > 0) {
+      const taxaEconomia = (saldoMes / receitasMes) * 100;
+      insights.push({
+        tipo: 'positivo',
+        titulo: `Você economizou ${taxaEconomia.toFixed(1)}%`,
+        descricao: `Das suas receitas, você conseguiu economizar ${taxaEconomia.toFixed(1)}%`,
+        valor: saldoMes,
+      });
+    } else if (saldoMes < 0) {
+      insights.push({
+        tipo: 'negativo',
+        titulo: 'Déficit no mês',
+        descricao: 'Suas despesas superaram as receitas',
+        valor: Math.abs(saldoMes),
+      });
+    }
+
+    // Insight 4: Tendência de gastos
+    if (evolucaoMensal.length >= 3) {
+      const ultimos3Meses = evolucaoMensal.slice(-3);
+      const tendencia = ultimos3Meses[2].despesas - ultimos3Meses[0].despesas;
+      
+      if (tendencia > 0) {
+        insights.push({
+          tipo: 'negativo',
+          titulo: 'Gastos em alta',
+          descricao: 'Suas despesas aumentaram nos últimos 3 meses',
+          valor: tendencia,
+        });
+      } else if (tendencia < 0) {
+        insights.push({
+          tipo: 'positivo',
+          titulo: 'Gastos em queda',
+          descricao: 'Suas despesas diminuíram nos últimos 3 meses',
+          valor: Math.abs(tendencia),
+        });
+      }
+    }
+
     return NextResponse.json({
       receitasMes,
       despesasMes,
@@ -155,6 +282,9 @@ export async function GET(request: Request) {
       receitasPorCategoria,
       despesasPorCategoria,
       evolucaoMensal,
+      comparacao,
+      previsoes,
+      insights,
       transacoes: transacoes.map((t) => ({
         id: t.id,
         descricao: t.descricao,
