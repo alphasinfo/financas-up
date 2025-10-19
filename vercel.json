@@ -4,15 +4,6 @@
   "framework": "nextjs",
   "headers": [
     {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json; charset=utf-8"
-        }
-      ]
-    },
-    {
       "source": "/(.*)",
       "headers": [
         {
