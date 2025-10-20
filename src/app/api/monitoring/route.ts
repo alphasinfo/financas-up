@@ -1,82 +1,168 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import type { Session } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { monitoring } from "@/lib/monitoring";
+/**
+ * API de Monitoramento
+ * 
+ * Endpoint para obter métricas do sistema
+ */
 
-// Marcar como rota dinâmica
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import MonitoringService from '@/lib/monitoring';
+import { simpleCache, dbCache, sessionCache, apiCache } from '@/lib/simple-cache';
+
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as Session | null;
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    // Verificar autenticação (apenas admins podem ver métricas)
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      );
     }
+
+    // TODO: Verificar se usuário é admin
+    // if (session.user.role !== 'admin') {
+    //   return NextResponse.json(
+    //     { error: 'Acesso negado' },
+    //     { status: 403 }
+    //   );
+    // }
 
     const { searchParams } = new URL(request.url);
-    const tipo = searchParams.get('tipo') || 'resumo';
+    const type = searchParams.get('type') || 'all';
 
-    switch (tipo) {
-      case 'resumo':
-        return NextResponse.json({
-          queries: monitoring.getEstatisticasQueries(),
-          apis: monitoring.getEstatisticasAPIs(),
-        });
+    let data: any = {};
 
-      case 'queries-lentas':
-        const limite = parseInt(searchParams.get('limite') || '10');
-        return NextResponse.json({
-          queriesLentas: monitoring.getQueriesLentas(limite),
-        });
-
-      case 'apis-lentas':
-        const limiteAPIs = parseInt(searchParams.get('limite') || '10');
-        return NextResponse.json({
-          apisLentas: monitoring.getAPIsLentas(limiteAPIs),
-        });
-
-      case 'erros':
-        const limiteErros = parseInt(searchParams.get('limite') || '20');
-        return NextResponse.json({
-          erros: monitoring.getErrosRecentes(limiteErros),
-        });
-
+    switch (type) {
+      case 'health':
+        data = MonitoringService.getHealthCheck();
+        break;
+        
+      case 'performance':
+        const operation = searchParams.get('operation');
+        data = MonitoringService.getPerformanceStats(operation || undefined);
+        break;
+        
+      case 'errors':
+        data = MonitoringService.getErrorStats();
+        break;
+        
+      case 'cache':
+        data = {
+          main: simpleCache.getStats(),
+          database: dbCache.getStats(),
+          session: sessionCache.getStats(),
+          api: apiCache.getStats(),
+        };
+        break;
+        
+      case 'system':
+        data = {
+          uptime: process.uptime(),
+          memory: process.memoryUsage(),
+          cpu: process.cpuUsage(),
+          platform: process.platform,
+          nodeVersion: process.version,
+          pid: process.pid,
+        };
+        break;
+        
+      case 'all':
       default:
-        return NextResponse.json(
-          { error: "Tipo inválido. Use: resumo, queries-lentas, apis-lentas, erros" },
-          { status: 400 }
-        );
+        data = {
+          health: MonitoringService.getHealthCheck(),
+          performance: MonitoringService.getPerformanceStats(),
+          errors: MonitoringService.getErrorStats(),
+          cache: {
+            main: simpleCache.getStats(),
+            database: dbCache.getStats(),
+            session: sessionCache.getStats(),
+            api: apiCache.getStats(),
+          },
+          system: {
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            platform: process.platform,
+            nodeVersion: process.version,
+          },
+        };
+        break;
     }
-  } catch (error: any) {
-    console.error("Erro ao buscar métricas de monitoramento:", error);
+
+    return NextResponse.json({
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error('Erro ao obter métricas:', error);
+    
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { 
+        success: false, 
+        error: 'Erro interno do servidor',
+        timestamp: new Date().toISOString(),
+      },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(request: Request) {
+/**
+ * Limpar métricas (apenas para admins)
+ */
+export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as Session | null;
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      );
     }
 
-    // Resetar métricas
-    monitoring.reset();
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type') || 'cache';
+
+    switch (type) {
+      case 'cache':
+        simpleCache.clear();
+        dbCache.clear();
+        sessionCache.clear();
+        apiCache.clear();
+        break;
+        
+      case 'metrics':
+        MonitoringService.cleanup();
+        break;
+        
+      default:
+        return NextResponse.json(
+          { error: 'Tipo de limpeza inválido' },
+          { status: 400 }
+        );
+    }
 
     return NextResponse.json({
-      mensagem: "Métricas resetadas com sucesso",
+      success: true,
+      message: `${type} limpo com sucesso`,
+      timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.error("Erro ao resetar métricas:", error);
+
+  } catch (error) {
+    console.error('Erro ao limpar métricas:', error);
+    
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { 
+        success: false, 
+        error: 'Erro interno do servidor' 
+      },
       { status: 500 }
     );
   }

@@ -1,326 +1,254 @@
 /**
  * Sistema de Monitoramento Básico
  * 
- * Monitora:
- * - Performance de queries
- * - Erros de conexão
- * - Uso de retry
- * - Métricas de API
+ * Implementação simples para tracking de performance e erros
  */
 
-interface MetricaQuery {
-  nome: string;
-  duracao: number;
-  sucesso: boolean;
-  tentativas: number;
-  erro?: string;
+interface PerformanceMetric {
+  operation: string;
+  duration: number;
   timestamp: Date;
+  success: boolean;
+  metadata?: Record<string, any>;
 }
 
-interface MetricaAPI {
-  rota: string;
-  metodo: string;
-  statusCode: number;
-  duracao: number;
-  erro?: string;
+interface ErrorMetric {
+  error: Error;
+  context: Record<string, any>;
   timestamp: Date;
+  userId?: string;
+  ip?: string;
 }
 
 class MonitoringService {
-  private metricas: MetricaQuery[] = [];
-  private metricasAPI: MetricaAPI[] = [];
-  private readonly MAX_METRICAS = 1000; // Limitar memória
+  private static metrics: PerformanceMetric[] = [];
+  private static errors: ErrorMetric[] = [];
+  private static readonly MAX_METRICS = 1000;
+  private static readonly MAX_ERRORS = 500;
 
   /**
-   * Registrar métrica de query
+   * Track performance de operações
    */
-  registrarQuery(metrica: MetricaQuery) {
-    this.metricas.push(metrica);
+  static trackPerformance(
+    operation: string,
+    duration: number,
+    success: boolean = true,
+    metadata?: Record<string, any>
+  ) {
+    const metric: PerformanceMetric = {
+      operation,
+      duration,
+      success,
+      timestamp: new Date(),
+      metadata,
+    };
+
+    this.metrics.push(metric);
     
-    // Limitar tamanho do array
-    if (this.metricas.length > this.MAX_METRICAS) {
-      this.metricas.shift();
+    // Manter apenas os últimos N métricas
+    if (this.metrics.length > this.MAX_METRICS) {
+      this.metrics = this.metrics.slice(-this.MAX_METRICS);
     }
 
-    // Log em desenvolvimento
+    // Log para console em desenvolvimento
     if (process.env.NODE_ENV === 'development') {
-      const status = metrica.sucesso ? '✅' : '❌';
-      const tentativas = metrica.tentativas > 1 ? ` (${metrica.tentativas} tentativas)` : '';
-      console.log(`[Monitor Query] ${status} ${metrica.nome} - ${metrica.duracao}ms${tentativas}`);
-      
-      if (metrica.erro) {
-        console.error(`[Monitor Query] Erro: ${metrica.erro}`);
-      }
+      console.log(`[PERF] ${operation}: ${duration}ms`, { success, metadata });
+    }
+
+    // Alertar se performance está ruim
+    if (duration > 5000) {
+      console.warn(`[SLOW] ${operation} took ${duration}ms`);
     }
   }
 
   /**
-   * Registrar métrica de API
+   * Track erros do sistema
    */
-  registrarAPI(metrica: MetricaAPI) {
-    this.metricasAPI.push(metrica);
+  static trackError(
+    error: Error,
+    context: Record<string, any> = {},
+    userId?: string,
+    ip?: string
+  ) {
+    const errorMetric: ErrorMetric = {
+      error,
+      context,
+      timestamp: new Date(),
+      userId,
+      ip,
+    };
+
+    this.errors.push(errorMetric);
     
-    // Limitar tamanho do array
-    if (this.metricasAPI.length > this.MAX_METRICAS) {
-      this.metricasAPI.shift();
+    // Manter apenas os últimos N erros
+    if (this.errors.length > this.MAX_ERRORS) {
+      this.errors = this.errors.slice(-this.MAX_ERRORS);
     }
 
-    // Log em desenvolvimento
-    if (process.env.NODE_ENV === 'development') {
-      const status = metrica.statusCode < 400 ? '✅' : '❌';
-      console.log(`[Monitor API] ${status} ${metrica.metodo} ${metrica.rota} - ${metrica.statusCode} - ${metrica.duracao}ms`);
-      
-      if (metrica.erro) {
-        console.error(`[Monitor API] Erro: ${metrica.erro}`);
-      }
-    }
+    // Log detalhado do erro
+    console.error(`[ERROR] ${error.message}`, {
+      stack: error.stack,
+      context,
+      userId,
+      ip,
+      timestamp: errorMetric.timestamp,
+    });
   }
 
   /**
-   * Obter estatísticas de queries
+   * Obter estatísticas de performance
    */
-  getEstatisticasQueries() {
-    const total = this.metricas.length;
-    const sucesso = this.metricas.filter(m => m.sucesso).length;
-    const falhas = total - sucesso;
-    const comRetry = this.metricas.filter(m => m.tentativas > 1).length;
-    
-    const duracoes = this.metricas.map(m => m.duracao);
-    const duracaoMedia = duracoes.length > 0
-      ? duracoes.reduce((a, b) => a + b, 0) / duracoes.length
-      : 0;
-    
-    const duracaoMax = duracoes.length > 0 ? Math.max(...duracoes) : 0;
-    const duracaoMin = duracoes.length > 0 ? Math.min(...duracoes) : 0;
+  static getPerformanceStats(operation?: string) {
+    const filteredMetrics = operation 
+      ? this.metrics.filter(m => m.operation === operation)
+      : this.metrics;
 
+    if (filteredMetrics.length === 0) {
+      return null;
+    }
+
+    const durations = filteredMetrics.map(m => m.duration);
+    const successCount = filteredMetrics.filter(m => m.success).length;
+    
     return {
-      total,
-      sucesso,
-      falhas,
-      taxaSucesso: total > 0 ? (sucesso / total) * 100 : 0,
-      comRetry,
-      taxaRetry: total > 0 ? (comRetry / total) * 100 : 0,
-      duracaoMedia: Math.round(duracaoMedia),
-      duracaoMax,
-      duracaoMin,
+      operation,
+      count: filteredMetrics.length,
+      successRate: (successCount / filteredMetrics.length) * 100,
+      avgDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
+      minDuration: Math.min(...durations),
+      maxDuration: Math.max(...durations),
+      p95Duration: this.percentile(durations, 95),
+      p99Duration: this.percentile(durations, 99),
     };
   }
 
   /**
-   * Obter estatísticas de APIs
+   * Obter estatísticas de erros
    */
-  getEstatisticasAPIs() {
-    const total = this.metricasAPI.length;
-    const sucesso = this.metricasAPI.filter(m => m.statusCode < 400).length;
-    const falhas = total - sucesso;
-    
-    const duracoes = this.metricasAPI.map(m => m.duracao);
-    const duracaoMedia = duracoes.length > 0
-      ? duracoes.reduce((a, b) => a + b, 0) / duracoes.length
-      : 0;
-    
-    const duracaoMax = duracoes.length > 0 ? Math.max(...duracoes) : 0;
-    const duracaoMin = duracoes.length > 0 ? Math.min(...duracoes) : 0;
+  static getErrorStats() {
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last1h = new Date(now.getTime() - 60 * 60 * 1000);
 
-    // Agrupar por rota
-    const porRota: Record<string, number> = {};
-    this.metricasAPI.forEach(m => {
-      porRota[m.rota] = (porRota[m.rota] || 0) + 1;
-    });
+    const errors24h = this.errors.filter(e => e.timestamp >= last24h);
+    const errors1h = this.errors.filter(e => e.timestamp >= last1h);
 
-    // Top 5 rotas mais acessadas
-    const topRotas = Object.entries(porRota)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([rota, count]) => ({ rota, count }));
+    const errorsByType = this.errors.reduce((acc, error) => {
+      const type = error.error.constructor.name;
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     return {
-      total,
-      sucesso,
-      falhas,
-      taxaSucesso: total > 0 ? (sucesso / total) * 100 : 0,
-      duracaoMedia: Math.round(duracaoMedia),
-      duracaoMax,
-      duracaoMin,
-      topRotas,
+      total: this.errors.length,
+      last24h: errors24h.length,
+      last1h: errors1h.length,
+      errorsByType,
+      recentErrors: this.errors.slice(-10).map(e => ({
+        message: e.error.message,
+        timestamp: e.timestamp,
+        context: e.context,
+      })),
     };
   }
 
   /**
-   * Obter queries mais lentas
+   * Obter health check do sistema
    */
-  getQueriesLentas(limite: number = 10) {
-    return [...this.metricas]
-      .sort((a, b) => b.duracao - a.duracao)
-      .slice(0, limite)
-      .map(m => ({
-        nome: m.nome,
-        duracao: m.duracao,
-        sucesso: m.sucesso,
-        tentativas: m.tentativas,
-        timestamp: m.timestamp,
-      }));
-  }
-
-  /**
-   * Obter APIs mais lentas
-   */
-  getAPIsLentas(limite: number = 10) {
-    return [...this.metricasAPI]
-      .sort((a, b) => b.duracao - a.duracao)
-      .slice(0, limite)
-      .map(m => ({
-        rota: m.rota,
-        metodo: m.metodo,
-        duracao: m.duracao,
-        statusCode: m.statusCode,
-        timestamp: m.timestamp,
-      }));
-  }
-
-  /**
-   * Obter erros recentes
-   */
-  getErrosRecentes(limite: number = 20) {
-    return [...this.metricas]
-      .filter(m => !m.sucesso)
-      .slice(-limite)
-      .map(m => ({
-        nome: m.nome,
-        erro: m.erro,
-        tentativas: m.tentativas,
-        timestamp: m.timestamp,
-      }));
-  }
-
-  /**
-   * Limpar métricas antigas (manter últimas 24h)
-   */
-  limparMetricasAntigas() {
-    const umDiaAtras = new Date();
-    umDiaAtras.setHours(umDiaAtras.getHours() - 24);
-
-    this.metricas = this.metricas.filter(m => m.timestamp > umDiaAtras);
-    this.metricasAPI = this.metricasAPI.filter(m => m.timestamp > umDiaAtras);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Monitor] Métricas antigas limpas. Queries: ${this.metricas.length}, APIs: ${this.metricasAPI.length}`);
-    }
-  }
-
-  /**
-   * Resetar todas as métricas
-   */
-  reset() {
-    this.metricas = [];
-    this.metricasAPI = [];
+  static getHealthCheck() {
+    const stats = this.getPerformanceStats();
+    const errorStats = this.getErrorStats();
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Monitor] Métricas resetadas');
-    }
+    const isHealthy = (
+      (stats?.successRate || 100) > 95 &&
+      (stats?.avgDuration || 0) < 2000 &&
+      errorStats.last1h < 10
+    );
+
+    return {
+      status: isHealthy ? 'healthy' : 'degraded',
+      timestamp: new Date(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      performance: stats,
+      errors: errorStats,
+    };
+  }
+
+  /**
+   * Limpar métricas antigas
+   */
+  static cleanup() {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h atrás
+    
+    this.metrics = this.metrics.filter(m => m.timestamp >= cutoff);
+    this.errors = this.errors.filter(e => e.timestamp >= cutoff);
+  }
+
+  /**
+   * Calcular percentil
+   */
+  private static percentile(arr: number[], p: number): number {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const index = Math.ceil((p / 100) * sorted.length) - 1;
+    return sorted[index] || 0;
   }
 }
 
-// Instância singleton
-export const monitoring = new MonitoringService();
-
 /**
- * Wrapper para monitorar queries do Prisma
+ * Decorator para tracking automático de performance
  */
-export async function monitorarQuery<T>(
-  nome: string,
-  query: () => Promise<T>,
-  maxTentativas: number = 1
-): Promise<T> {
-  const inicio = Date.now();
-  let tentativas = 0;
-  let ultimoErro: Error | undefined;
+export function trackPerformance(operation: string) {
+  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
 
-  while (tentativas < maxTentativas) {
-    tentativas++;
-    
-    try {
-      const resultado = await query();
-      const duracao = Date.now() - inicio;
+    descriptor.value = async function (...args: any[]) {
+      const start = Date.now();
+      let success = true;
       
-      monitoring.registrarQuery({
-        nome,
-        duracao,
-        sucesso: true,
-        tentativas,
-        timestamp: new Date(),
-      });
-      
-      return resultado;
-    } catch (error: any) {
-      ultimoErro = error;
-      
-      // Se não é a última tentativa, aguardar antes de tentar novamente
-      if (tentativas < maxTentativas) {
-        const delay = Math.pow(2, tentativas - 1) * 1000; // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay));
+      try {
+        const result = await method.apply(this, args);
+        return result;
+      } catch (error) {
+        success = false;
+        MonitoringService.trackError(error as Error, { operation, args });
+        throw error;
+      } finally {
+        const duration = Date.now() - start;
+        MonitoringService.trackPerformance(operation, duration, success);
       }
-    }
-  }
-
-  // Se chegou aqui, todas as tentativas falharam
-  const duracao = Date.now() - inicio;
-  
-  monitoring.registrarQuery({
-    nome,
-    duracao,
-    sucesso: false,
-    tentativas,
-    erro: ultimoErro?.message,
-    timestamp: new Date(),
-  });
-  
-  throw ultimoErro;
+    };
+  };
 }
 
 /**
- * Wrapper para monitorar APIs
+ * Middleware para tracking de requests
  */
-export function monitorarAPI(
-  rota: string,
-  metodo: string,
-  handler: () => Promise<Response>
-): Promise<Response> {
-  const inicio = Date.now();
-  
-  return handler()
-    .then(response => {
-      const duracao = Date.now() - inicio;
+export function createMonitoringMiddleware() {
+  return (req: Request, res: Response, next: Function) => {
+    const start = Date.now();
+    const operation = `${req.method} ${req.url}`;
+    
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      const success = res.statusCode < 400;
       
-      monitoring.registrarAPI({
-        rota,
-        metodo,
-        statusCode: response.status,
-        duracao,
-        timestamp: new Date(),
+      MonitoringService.trackPerformance(operation, duration, success, {
+        statusCode: res.statusCode,
+        userAgent: req.headers['user-agent'],
       });
-      
-      return response;
-    })
-    .catch(error => {
-      const duracao = Date.now() - inicio;
-      
-      monitoring.registrarAPI({
-        rota,
-        metodo,
-        statusCode: 500,
-        duracao,
-        erro: error.message,
-        timestamp: new Date(),
-      });
-      
-      throw error;
     });
+    
+    next();
+  };
 }
 
-// Limpar métricas antigas a cada hora
-if (typeof setInterval !== 'undefined') {
+// Limpeza automática a cada hora
+if (typeof window === 'undefined') {
   setInterval(() => {
-    monitoring.limparMetricasAntigas();
+    MonitoringService.cleanup();
   }, 60 * 60 * 1000); // 1 hora
 }
+
+export { MonitoringService };
+export default MonitoringService;
