@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id                         String                    @id @default(cuid())
+  nome                       String
+  email                      String                    @unique
+  senha                      String?
+  imagem                     String?
+  logo                       String?
+  criadoEm                   DateTime                  @default(now())
+  atualizadoEm               DateTime                  @default(now()) @updatedAt
+  enviarRelatorioEmail       Boolean                   @default(false)
+  diaEnvioRelatorio          Int?
+  ultimoEnvioRelatorio       DateTime?
+  notificacaoEmail           Boolean                   @default(true)
+  notificacaoVencimento      Boolean                   @default(true)
+  notificacaoOrcamento       Boolean                   @default(true)
+  smtpProvider               String?
+  smtpEmail                  String?
+  smtpPassword               String?
+  smtpHost                   String?
+  smtpPort                   Int?
+  smtpNome                   String?
+  twoFactorEnabled           Boolean                   @default(false)
+  twoFactorSecret            String?
+  twoFactorBackupCodes       String?
+  cartoes                    CartaoCredito[]
+  categorias                 Categoria[]
+  compartilhamentosCriados   CompartilhamentoConta[]   @relation("compartilhamentos_criados")
+  compartilhamentosRecebidos CompartilhamentoConta[]   @relation("compartilhamentos_recebidos")
+  conciliacoes               Conciliacao[]
+  contas                     ContaBancaria[]
+  convites                   ConviteCompartilhamento[]
+  emprestimos                Emprestimo[]
+  investimentos              Investimento[]
+  logsAcesso                 LogAcesso[]
+  metas                      Meta[]
+  orcamentos                 Orcamento[]
+  transacoes                 Transacao[]
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id         String      @id @default(cuid())
+  nome       String
+  tipo       String
+  cor        String?
+  icone      String?
+  usuarioId  String
+  criadoEm   DateTime    @default(now())
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orcamentos Orcamento[]
+  transacoes Transacao[]
+
+  @@index([usuarioId], map: "idx_categorias_usuarioId")
+  @@map("categorias")
+}
+
+model ContaBancaria {
+  id                String                  @id @default(cuid())
+  nome              String
+  instituicao       String
+  agencia           String?
+  numero            String?
+  tipo              String
+  saldoInicial      Float                   @default(0)
+  saldoAtual        Float                   @default(0)
+  saldoDisponivel   Float                   @default(0)
+  temLimiteCredito  Boolean                 @default(false)
+  limiteCredito     Float                   @default(0)
+  cor               String?
+  ativa             Boolean                 @default(true)
+  usuarioId         String
+  criadoEm          DateTime                @default(now())
+  atualizadoEm      DateTime                @default(now()) @updatedAt
+  compartilhamentos CompartilhamentoConta[]
+  usuario           Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pagamentosFatura  PagamentoFatura[]
+  transacoes        Transacao[]
+
+  @@index([usuarioId], map: "idx_contas_usuarioId")
+  @@index([usuarioId, ativa], map: "idx_contas_usuarioId_ativa")
+  @@map("contas_bancarias")
+}
+
+model CartaoCredito {
+  id               String      @id @default(cuid())
+  nome             String
+  banco            String
+  bandeira         String
+  apelido          String?
+  numeroMascara    String?
+  limiteTotal      Float
+  limiteDisponivel Float
+  diaFechamento    Int
+  diaVencimento    Int
+  cor              String?
+  ativo            Boolean     @default(true)
+  usuarioId        String
+  criadoEm         DateTime    @default(now())
+  atualizadoEm     DateTime    @default(now()) @updatedAt
+  usuario          Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  faturas          Fatura[]
+  transacoes       Transacao[]
+
+  @@index([usuarioId], map: "idx_cartoes_usuarioId")
+  @@index([usuarioId, ativo], map: "idx_cartoes_usuarioId_ativo")
+  @@map("cartoes_credito")
+}
+
+model Fatura {
+  id             String            @id @default(cuid())
+  cartaoId       String
+  mesReferencia  Int
+  anoReferencia  Int
+  dataFechamento DateTime
+  dataVencimento DateTime
+  valorTotal     Float             @default(0)
+  valorPago      Float             @default(0)
+  status         String            @default("ABERTA")
+  criadoEm       DateTime          @default(now())
+  atualizadoEm   DateTime          @default(now()) @updatedAt
+  cartao         CartaoCredito     @relation(fields: [cartaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pagamentos     PagamentoFatura[]
+  transacoes     Transacao[]
+
+  @@unique([cartaoId, mesReferencia, anoReferencia])
+  @@index([cartaoId], map: "idx_faturas_cartaoId")
+  @@index([dataVencimento], map: "idx_faturas_dataVencimento")
+  @@index([mesReferencia, anoReferencia], map: "idx_faturas_mesReferencia_anoReferencia")
+  @@index([status], map: "idx_faturas_status")
+  @@map("faturas")
+}
+
+model PagamentoFatura {
+  id              String         @id @default(cuid())
+  faturaId        String
+  contaBancariaId String?
+  emprestimoId    String?
+  valor           Float
+  dataPagamento   DateTime
+  criadoEm        DateTime       @default(now())
+  contaBancaria   ContaBancaria? @relation(fields: [contaBancariaId], references: [id], onUpdate: NoAction)
+  emprestimo      Emprestimo?    @relation(fields: [emprestimoId], references: [id], onUpdate: NoAction)
+  fatura          Fatura         @relation(fields: [faturaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("pagamentos_fatura")
+}
+
+model Transacao {
+  id              String         @id @default(cuid())
+  tipo            String
+  descricao       String
+  valor           Float
+  dataCompetencia DateTime
+  dataLiquidacao  DateTime?
+  status          String         @default("PENDENTE")
+  parcelado       Boolean        @default(false)
+  parcelaAtual    Int?
+  parcelaTotal    Int?
+  categoriaId     String?
+  contaBancariaId String?
+  cartaoCreditoId String?
+  faturaId        String?
+  usuarioId       String
+  observacoes     String?
+  criadoEm        DateTime       @default(now())
+  atualizadoEm    DateTime       @default(now()) @updatedAt
+  cartaoCredito   CartaoCredito? @relation(fields: [cartaoCreditoId], references: [id], onUpdate: NoAction)
+  categoria       Categoria?     @relation(fields: [categoriaId], references: [id], onUpdate: NoAction)
+  contaBancaria   ContaBancaria? @relation(fields: [contaBancariaId], references: [id], onUpdate: NoAction)
+  fatura          Fatura?        @relation(fields: [faturaId], references: [id], onUpdate: NoAction)
+  usuario         Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([cartaoCreditoId], map: "idx_transacoes_cartaoCreditoId")
+  @@index([categoriaId], map: "idx_transacoes_categoriaId")
+  @@index([contaBancariaId], map: "idx_transacoes_contaBancariaId")
+  @@index([dataCompetencia], map: "idx_transacoes_dataCompetencia")
+  @@index([faturaId], map: "idx_transacoes_faturaId")
+  @@index([usuarioId], map: "idx_transacoes_usuarioId")
+  @@index([usuarioId, dataCompetencia], map: "idx_transacoes_usuarioId_dataCompetencia")
+  @@index([usuarioId, status], map: "idx_transacoes_usuarioId_status")
+  @@index([usuarioId, tipo, dataCompetencia], map: "idx_transacoes_usuarioId_tipo_data")
+  @@index([usuarioId, status, dataCompetencia], map: "idx_transacoes_usuarioId_status_data")
+  @@index([cartaoCreditoId, dataCompetencia], map: "idx_transacoes_cartao_data")
+  @@map("transacoes")
+}
+
+model Emprestimo {
+  id                 String              @id @default(cuid())
+  instituicao        String
+  descricao          String?
+  valorTotal         Float
+  valorParcela       Float
+  numeroParcelas     Int
+  parcelasPagas      Int                 @default(0)
+  taxaJurosMensal    Float?
+  taxaJurosAnual     Float?
+  sistemaAmortizacao String              @default("PRICE")
+  dataContratacao    DateTime
+  diaVencimento      Int
+  status             String              @default("ATIVO")
+  usuarioId          String
+  criadoEm           DateTime            @default(now())
+  atualizadoEm       DateTime            @default(now()) @updatedAt
+  usuario            Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pagamentosFatura   PagamentoFatura[]
+  parcelas           ParcelaEmprestimo[]
+
+  @@index([status], map: "idx_emprestimos_status")
+  @@index([usuarioId], map: "idx_emprestimos_usuarioId")
+  @@index([usuarioId, status], map: "idx_emprestimos_usuarioId_status")
+  @@map("emprestimos")
+}
+
+model ParcelaEmprestimo {
+  id               String     @id @default(cuid())
+  emprestimoId     String
+  numeroParcela    Int
+  numero           Int
+  valor            Float
+  valorAmortizacao Float
+  valorJuros       Float
+  saldoDevedor     Float
+  dataVencimento   DateTime
+  dataPagamento    DateTime?
+  status           String     @default("PENDENTE")
+  criadoEm         DateTime   @default(now())
+  emprestimo       Emprestimo @relation(fields: [emprestimoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([emprestimoId, numeroParcela])
+  @@index([dataVencimento], map: "idx_parcelas_emprestimo_dataVencimento")
+  @@index([emprestimoId], map: "idx_parcelas_emprestimo_emprestimoId")
+  @@index([status], map: "idx_parcelas_emprestimo_status")
+  @@map("parcelas_emprestimo")
+}
+
+model Investimento {
+  id             String    @id @default(cuid())
+  nome           String
+  tipo           String
+  valorAplicado  Float
+  valorAtual     Float?
+  taxaRendimento Float?
+  dataAplicacao  DateTime
+  dataVencimento DateTime?
+  instituicao    String?
+  observacoes    String?
+  usuarioId      String
+  criadoEm       DateTime  @default(now())
+  atualizadoEm   DateTime  @default(now()) @updatedAt
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuarioId], map: "idx_investimentos_usuarioId")
+  @@map("investimentos")
+}
+
+model Orcamento {
+  id            String     @id @default(cuid())
+  nome          String
+  categoriaId   String?
+  valorLimite   Float
+  valorGasto    Float      @default(0)
+  mesReferencia Int
+  anoReferencia Int
+  usuarioId     String
+  criadoEm      DateTime   @default(now())
+  atualizadoEm  DateTime   @default(now()) @updatedAt
+  categoria     Categoria? @relation(fields: [categoriaId], references: [id], onUpdate: NoAction)
+  usuario       Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuarioId], map: "idx_orcamentos_usuarioId")
+  @@index([usuarioId, mesReferencia, anoReferencia], map: "idx_orcamentos_usuarioId_mesReferencia_anoReferencia")
+  @@map("orcamentos")
+}
+
+model Meta {
+  id           String    @id @default(cuid())
+  titulo       String
+  descricao    String?
+  valorAlvo    Float
+  valorAtual   Float     @default(0)
+  dataInicio   DateTime
+  dataPrazo    DateTime?
+  status       String    @default("EM_ANDAMENTO")
+  usuarioId    String
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @default(now()) @updatedAt
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuarioId], map: "idx_metas_usuarioId")
+  @@map("metas")
+}
+
+model Conciliacao {
+  id                  String   @id @default(cuid())
+  tipo                String
+  nomeArquivo         String
+  dataImportacao      DateTime @default(now())
+  registrosTotal      Int
+  registrosNovos      Int
+  registrosDuplicados Int
+  status              String   @default("PROCESSADO")
+  usuarioId           String
+  usuario             Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuarioId], map: "idx_conciliacoes_usuarioId")
+  @@map("conciliacoes")
+}
+
+model CompartilhamentoConta {
+  id        String        @id @default(cuid())
+  contaId   String
+  usuarioId String
+  permissao String        @default("VISUALIZAR")
+  criadoPor String
+  criadoEm  DateTime      @default(now())
+  ativo     Boolean       @default(true)
+  conta     ContaBancaria @relation(fields: [contaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  criador   Usuario       @relation("compartilhamentos_criados", fields: [criadoPor], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario   Usuario       @relation("compartilhamentos_recebidos", fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([contaId, usuarioId])
+  @@index([contaId], map: "idx_compartilhamentos_conta_contaId")
+  @@index([criadoPor], map: "idx_compartilhamentos_conta_criadoPor")
+  @@index([usuarioId], map: "idx_compartilhamentos_conta_usuarioId")
+  @@map("compartilhamentos_conta")
+}
+
+model ConviteCompartilhamento {
+  id        String    @id @default(cuid())
+  email     String
+  tipo      String
+  recursoId String?
+  permissao String    @default("VISUALIZAR")
+  token     String    @unique
+  criadoPor String
+  criadoEm  DateTime  @default(now())
+  expiraEm  DateTime
+  aceito    Boolean   @default(false)
+  aceitoEm  DateTime?
+  criador   Usuario   @relation(fields: [criadoPor], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([criadoPor], map: "idx_convites_compartilhamento_criadoPor")
+  @@index([email], map: "idx_convites_compartilhamento_email")
+  @@map("convites_compartilhamento")
+}
+
+model LogAcesso {
+  id        String   @id @default(cuid())
+  usuarioId String
+  acao      String
+  recurso   String?
+  recursoId String?
+  ip        String?
+  userAgent String?
+  criadoEm  DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([criadoEm], map: "idx_logs_acesso_criadoEm")
+  @@index([usuarioId], map: "idx_logs_acesso_usuarioId")
+  @@map("logs_acesso")
+}
