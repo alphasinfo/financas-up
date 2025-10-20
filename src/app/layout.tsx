@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { LogoProvider } from "@/contexts/logo-context";
 import { PWAManager } from "@/components/pwa-manager";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -61,10 +62,12 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
-        <LogoProvider>
-          <PWAManager />
-          {children}
-        </LogoProvider>
+        <QueryProvider>
+          <LogoProvider>
+            <PWAManager />
+            {children}
+          </LogoProvider>
+        </QueryProvider>
         <Analytics />
         <SpeedInsights />
       </body>
