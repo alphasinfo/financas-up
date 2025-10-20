@@ -68,11 +68,15 @@ export default function RootLayout({
             <LogoProvider>
               <PWAManager />
               {children}
+              {process.env.NODE_ENV === 'production' && (
+                <>
+                  <Analytics />
+                  <SpeedInsights />
+                </>
+              )}
             </LogoProvider>
           </QueryProvider>
         </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

@@ -216,6 +216,12 @@ export const loginSchema = z.object({
   lembrarMe: z.boolean().optional(),
 });
 
+// Schema para login rate limit
+export const rateLimitCheckSchema = z.object({
+  email: z.string().email('Email inválido'),
+  action: z.enum(['record-failure', 'clear']).optional(),
+});
+
 // Schema para paginação
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
