@@ -1,18 +1,18 @@
 import { prisma } from "@/lib/prisma";
-import { withCache, getDashboardCacheKey } from "@/lib/cache";
 import { withRetry } from "@/lib/prisma-retry";
+import { cacheManager, CacheKeys } from "@/lib/cache-manager";
 
 /**
  * Função otimizada para buscar dados do dashboard
- * - Usa cache com TTL de 2 minutos
+ * - Usa cache com TTL de 2 minutos (120 segundos)
  * - Queries otimizadas com select específico
  * - Agregações no banco de dados
  * - Retry automático para erros de conexão
  */
 export async function getDashboardDataOptimized(usuarioId: string) {
-  const cacheKey = getDashboardCacheKey(usuarioId);
+  const cacheKey = CacheKeys.dashboard(usuarioId);
   
-  return withCache(cacheKey, async () => {
+  return cacheManager.getOrSet(cacheKey, async () => {
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
@@ -302,5 +302,5 @@ export async function getDashboardDataOptimized(usuarioId: string) {
       investimentos: [], // Não precisamos dos dados completos
       quantidadeInvestimentos,
     };
-  }, 2 * 60 * 1000); // Cache de 2 minutos
+  }, 120); // Cache de 2 minutos (120 segundos)
 }
