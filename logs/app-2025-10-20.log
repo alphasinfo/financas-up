@@ -22,3 +22,11 @@
 {"timestamp":"2025-10-20T05:49:04.202Z","level":"INFO","message":"Initialized 4 default notification templates"}
 {"timestamp":"2025-10-20T05:49:04.205Z","level":"INFO","message":"Initialized 4 default user segments"}
 {"timestamp":"2025-10-20T05:49:04.206Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-20T06:12:44.077Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-20T06:12:44.081Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-20T06:12:44.087Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-20T06:12:44.101Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-20T06:12:46.482Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-20T06:12:46.486Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-20T06:12:46.489Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-20T06:12:46.490Z","level":"INFO","message":"Notification scheduler started"}

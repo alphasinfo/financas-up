@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { LogoProvider } from "@/contexts/logo-context";
 import { PWAManager } from "@/components/pwa-manager";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -49,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
@@ -62,12 +63,14 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
-        <QueryProvider>
-          <LogoProvider>
-            <PWAManager />
-            {children}
-          </LogoProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <LogoProvider>
+              <PWAManager />
+              {children}
+            </LogoProvider>
+          </QueryProvider>
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

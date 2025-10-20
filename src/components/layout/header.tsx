@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { Notificacoes } from "@/components/notificacoes";
 import { UserMenu } from "@/components/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { WifiOff, Wifi } from "lucide-react";
 import {
   Select,
@@ -101,13 +102,13 @@ export function Header() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between">
         <div className="ml-14 md:ml-0 min-w-0 flex-1">
-          <h2 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
             Bem-vindo, {session?.user?.name?.split(" ")[0] || "Usuário"}!
           </h2>
-          <p className="text-xs md:text-sm text-gray-500 hidden sm:block">
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
             Gerencie suas finanças de forma simples e eficiente
           </p>
         </div>
@@ -124,10 +125,10 @@ export function Header() {
           )}
 
           {/* Saldo Total e Seletor de Moeda */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div className="text-right">
-              <div className="text-xs text-gray-500">Saldo Total</div>
-              <div className="text-sm font-bold text-blue-600">
+              <div className="text-xs text-gray-500 dark:text-gray-400">Saldo Total</div>
+              <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                 {loading ? '...' : `${MOEDAS.find(m => m.codigo === moedaSelecionada)?.simbolo} ${saldoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
             </div>
@@ -145,6 +146,7 @@ export function Header() {
             </Select>
           </div>
 
+          <ThemeToggle />
           <Notificacoes />
           <UserMenu />
         </div>
