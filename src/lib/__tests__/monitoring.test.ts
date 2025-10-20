@@ -2,8 +2,8 @@ import MonitoringService from '../monitoring';
 
 describe('Sistema de Monitoramento', () => {
   beforeEach(() => {
-    // Limpar métricas antes de cada teste
-    MonitoringService.cleanup();
+    // Limpar todas as métricas antes de cada teste
+    MonitoringService.clearAll();
   });
 
   describe('Tracking de Performance', () => {

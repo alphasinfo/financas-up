@@ -186,6 +186,14 @@ class MonitoringService {
   }
 
   /**
+   * Limpar todos os dados (para testes)
+   */
+  static clearAll() {
+    this.metrics = [];
+    this.errors = [];
+  }
+
+  /**
    * Calcular percentil
    */
   private static percentile(arr: number[], p: number): number {
@@ -222,25 +230,10 @@ export function trackPerformance(operation: string) {
 }
 
 /**
- * Middleware para tracking de requests
+ * Middleware para tracking de requests (Next.js)
  */
-export function createMonitoringMiddleware() {
-  return (req: Request, res: Response, next: Function) => {
-    const start = Date.now();
-    const operation = `${req.method} ${req.url}`;
-    
-    res.on('finish', () => {
-      const duration = Date.now() - start;
-      const success = res.statusCode < 400;
-      
-      MonitoringService.trackPerformance(operation, duration, success, {
-        statusCode: res.statusCode,
-        userAgent: req.headers['user-agent'],
-      });
-    });
-    
-    next();
-  };
+export function trackRequest(operation: string, duration: number, success: boolean, metadata?: any) {
+  MonitoringService.trackPerformance(operation, duration, success, metadata);
 }
 
 // Limpeza automática a cada hora
