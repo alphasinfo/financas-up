@@ -4,8 +4,6 @@ import { LogoProvider } from "@/contexts/logo-context";
 import { PWAManager } from "@/components/pwa-manager";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -68,12 +66,7 @@ export default function RootLayout({
             <LogoProvider>
               <PWAManager />
               {children}
-              {process.env.NODE_ENV === 'production' && (
-                <>
-                  <Analytics />
-                  <SpeedInsights />
-                </>
-              )}
+              {/* Removed Vercel analytics to avoid ad blockers */}
             </LogoProvider>
           </QueryProvider>
         </ThemeProvider>
