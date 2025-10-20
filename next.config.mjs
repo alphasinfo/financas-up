@@ -80,7 +80,15 @@ const nextConfig = {
       },
       {
         key: 'Content-Security-Policy',
-        value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' *.vercel-scripts.com; connect-src 'self' *.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
+        value: "default-src 'self'; " +
+               "script-src 'self' 'unsafe-eval' 'unsafe-inline' *.vercel-scripts.com vercel.live va.vercel-scripts.com 'nonce-vercel'; " +
+               "connect-src 'self' *.vercel-scripts.com vercel.live; " +
+               "style-src 'self' 'unsafe-inline'; " +
+               "img-src 'self' data: blob:; " +
+               "font-src 'self'; " +
+               "frame-src vercel.live; " +
+               "object-src 'none'; " +
+               "base-uri 'self'"
       },
       {
         key: 'Permissions-Policy',
