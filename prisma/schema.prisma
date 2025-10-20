@@ -28,6 +28,9 @@ model Usuario {
   smtpHost                   String?
   smtpPort                   Int?
   smtpNome                   String?
+  twoFactorEnabled           Boolean                   @default(false)
+  twoFactorSecret            String?
+  twoFactorBackupCodes       String?
   cartoes                    CartaoCredito[]
   categorias                 Categoria[]
   compartilhamentosCriados   CompartilhamentoConta[]   @relation("compartilhamentos_criados")

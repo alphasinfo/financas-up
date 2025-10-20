@@ -1,7 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Settings, User, Mail, Database, FileText, ArrowRight, Users, UserPlus, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Settings, User, Mail, Database, FileText, ArrowRight, Users, UserPlus, Shield, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 interface AbaInicioProps {
   onMudarAba: (aba: string) => void;
@@ -94,6 +96,33 @@ export function AbaInicio({ onMudarAba }: AbaInicioProps) {
               até preferências de aparência e backup de dados. Explore as abas acima para acessar
               cada seção.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card Destaque - Segurança 2FA */}
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-900 flex items-center gap-2">
+                Autenticação de Dois Fatores (2FA)
+                <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full font-bold">NOVO</span>
+              </h3>
+              <p className="text-sm text-green-700 mt-2">
+                Proteja sua conta com uma camada extra de segurança. Ative o 2FA e use seu aplicativo
+                autenticador (Google Authenticator, Authy, etc.) para fazer login.
+              </p>
+              <Link href="/dashboard/configuracoes/seguranca">
+                <Button className="mt-4 bg-green-600 hover:bg-green-700">
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Configurar 2FA
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
