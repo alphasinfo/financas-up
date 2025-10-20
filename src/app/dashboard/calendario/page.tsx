@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import FullCalendar from "@fullcalendar/react";
+import dynamic from 'next/dynamic';
+const FullCalendar = dynamic(() => import("@fullcalendar/react"), { ssr: false });
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
