@@ -213,8 +213,9 @@ async function main() {
       prisma.contaBancaria.create({
         data: {
           nome: conta.nome,
-          banco: conta.banco,
+          instituicao: conta.banco,
           tipo: conta.tipo,
+          saldoInicial: conta.saldoInicial,
           saldoAtual: conta.saldoInicial,
           saldoDisponivel: conta.saldoInicial,
           cor: conta.cor,
