@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
 
   if (!limit.success) {
     const now = Date.now();
-    const retryAfterSeconds = Math.ceil((limit.reset - now) / 1000);
+    const retryAfterSeconds = Math.ceil((limit.resetTime - now) / 1000);
     
     return NextResponse.json(
       {
@@ -53,7 +53,7 @@ export function middleware(request: NextRequest) {
           'Retry-After': String(retryAfterSeconds),
           'X-RateLimit-Limit': String(limit.limit),
           'X-RateLimit-Remaining': String(limit.remaining),
-          'X-RateLimit-Reset': String(Math.ceil(limit.reset / 1000)),
+          'X-RateLimit-Reset': String(Math.ceil(limit.resetTime / 1000)),
         },
       }
     );
@@ -62,7 +62,7 @@ export function middleware(request: NextRequest) {
   // Adicionar headers de rate limit na resposta
   response.headers.set('X-RateLimit-Limit', String(limit.limit));
   response.headers.set('X-RateLimit-Remaining', String(limit.remaining));
-  response.headers.set('X-RateLimit-Reset', String(limit.reset));
+  response.headers.set('X-RateLimit-Reset', String(limit.resetTime));
 
   // 2. Headers de Segurança
   response.headers.set('X-Frame-Options', 'DENY');

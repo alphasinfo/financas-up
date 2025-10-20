@@ -24,7 +24,7 @@ export async function POST(request: Request) {
           headers: {
             'X-RateLimit-Limit': rateLimitResult.limit.toString(),
             'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
           }
         }
       );

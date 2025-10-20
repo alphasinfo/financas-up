@@ -1,5 +1,5 @@
 import { getDashboardDataOptimized } from '../dashboard-optimized';
-import { cache } from '../cache';
+import { cacheManager, CacheKeys } from '../cache-manager';
 
 // Mock do Prisma
 jest.mock('../prisma', () => ({
@@ -38,12 +38,8 @@ describe('Dashboard Otimizado', () => {
 
   beforeEach(() => {
     // Limpar cache e mocks antes de cada teste
-    cache.clear();
+    cacheManager.clear();
     jest.clearAllMocks();
-  });
-
-  afterAll(() => {
-    cache.destroy();
   });
 
   describe('Cache', () => {
@@ -105,8 +101,8 @@ describe('Dashboard Otimizado', () => {
       await getDashboardDataOptimized(mockUserId);
 
       // Verificar se cache foi criado com chave correta
-      const cacheKey = `user:${mockUserId}:dashboard:${new Date().toISOString().split('T')[0]}`;
-      const cachedData = cache.get(cacheKey);
+      const cacheKey = CacheKeys.dashboard(mockUserId);
+      const cachedData = cacheManager.get(cacheKey);
       
       expect(cachedData).not.toBeNull();
     });
@@ -115,6 +111,9 @@ describe('Dashboard Otimizado', () => {
   describe('Agregações', () => {
     it('deve agregar dados de contas corretamente', async () => {
       const { prisma } = require('../prisma');
+
+      // Limpar cache antes do teste
+      cacheManager.clear();
 
       prisma.contaBancaria.aggregate.mockResolvedValue({
         _sum: { saldoAtual: 15000, limiteCredito: 5000 },
@@ -143,6 +142,9 @@ describe('Dashboard Otimizado', () => {
 
     it('deve agregar dados de cartões corretamente', async () => {
       const { prisma } = require('../prisma');
+
+      // Limpar cache antes do teste
+      cacheManager.clear();
 
       prisma.cartaoCredito.aggregate.mockResolvedValue({
         _sum: { limiteTotal: 10000, limiteDisponivel: 7000 },
@@ -173,6 +175,9 @@ describe('Dashboard Otimizado', () => {
 
     it('deve calcular receitas e despesas corretamente', async () => {
       const { prisma } = require('../prisma');
+
+      // Limpar cache antes do teste
+      cacheManager.clear();
 
       prisma.transacao.groupBy.mockResolvedValue([
         { tipo: 'RECEITA', status: 'RECEBIDO', _sum: { valor: 5000 } },

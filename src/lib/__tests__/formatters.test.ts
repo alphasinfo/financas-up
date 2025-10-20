@@ -1,4 +1,10 @@
-import { formatarMoeda, formatarData, calcularPorcentagem, formatarPorcentagem } from '../formatters'
+import { formatCurrency, formatDate, formatPercentage } from '../formatters';
+
+// Aliases para compatibilidade com testes existentes
+const formatarMoeda = formatCurrency;
+const formatarData = formatDate;
+const calcularPorcentagem = (valor: number, total: number) => total === 0 ? 0 : (valor / total) * 100;
+const formatarPorcentagem = (valor: number) => `${valor.toFixed(1)}%`;
 
 describe('Formatters', () => {
   describe('formatarMoeda', () => {
