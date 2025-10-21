@@ -17,10 +17,7 @@ if (fs.existsSync(envLocalPath)) {
 
 console.log(`🔍 DATABASE_URL atual: ${process.env.DATABASE_URL}`);
 
-// Forçar SQLite para desenvolvimento local
-process.env.DATABASE_URL = 'file:./dev.db';
-console.log(`🔧 DATABASE_URL forçada para: ${process.env.DATABASE_URL}`);
-
+// Não forçar mais - usar a DATABASE_URL do ambiente
 const prisma = new PrismaClient();
 
 async function main() {

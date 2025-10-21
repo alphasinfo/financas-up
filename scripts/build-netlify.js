@@ -36,8 +36,11 @@ function runCommand(command, args = []) {
 
 async function build() {
   try {
-    await runCommand('npm', ['run', 'db:supabase']);
+    // Não alternar banco durante build - schema já deve estar configurado
+    console.log('📦 Gerando Prisma Client...');
     await runCommand('npx', ['prisma', 'generate']);
+    
+    console.log('🏗️  Construindo aplicação Next.js...');
     await runCommand('npx', ['next', 'build']);
 
     console.log('\n✅ Build Netlify concluído!');
