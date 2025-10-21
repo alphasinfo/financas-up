@@ -88,8 +88,8 @@ const nextConfig = {
     ];
   },
 
-  // Configurações de output para Netlify
-  output: process.env.NETLIFY === 'true' ? 'standalone' : undefined,
+  // Não usar standalone no Netlify - o plugin gerencia isso
+  // output: process.env.NETLIFY === 'true' ? 'standalone' : undefined,
 };
 
 export default nextConfig;
