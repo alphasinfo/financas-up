@@ -6,7 +6,12 @@
  * Mostra todos os tipos de gráficos disponíveis com dados de exemplo
  */
 
-import { ExpenseChart, CategoryChart, BarChart, AreaChart } from '@/components/charts';
+import dynamic from 'next/dynamic';
+
+const ExpenseChart = dynamic(() => import('@/components/charts/ExpenseChart'));
+const CategoryChart = dynamic(() => import('@/components/charts/CategoryChart'));
+const BarChart = dynamic(() => import('@/components/charts/BarChart'));
+const AreaChart = dynamic(() => import('@/components/charts/AreaChart'));
 
 // Dados de exemplo
 const expenseData = [

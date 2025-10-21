@@ -73,34 +73,38 @@ self.addEventListener('activate', (event) => {
 
 // Interceptar requisições
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const url = new URL(event.request.url);
+  
+  // Ignorar completamente a rota raiz
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    return;
+  }
   
   // Ignorar requisições não-HTTP
-  if (!request.url.startsWith('http')) {
+  if (!event.request.url.startsWith('http')) {
     return;
   }
   
   // Estratégia Cache First para arquivos estáticos
   if (STATIC_FILES.includes(url.pathname) || url.pathname.startsWith('/icons/')) {
-    event.respondWith(cacheFirst(request));
+    event.respondWith(cacheFirst(event.request));
     return;
   }
   
   // Estratégia Network First para APIs
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(event.request));
     return;
   }
   
   // Estratégia Stale While Revalidate para páginas
-  if (request.mode === 'navigate') {
-    event.respondWith(staleWhileRevalidate(request));
+  if (event.request.mode === 'navigate') {
+    event.respondWith(staleWhileRevalidate(event.request));
     return;
   }
   
   // Estratégia padrão: Network First
-  event.respondWith(networkFirst(request));
+  event.respondWith(networkFirst(event.request));
 });
 
 // Estratégia Cache First

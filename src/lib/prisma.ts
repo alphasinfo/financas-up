@@ -4,14 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Configurações otimizadas para Vercel Serverless + Supabase
+// Obter DATABASE_URL de múltiplas fontes (Netlify, Vercel, local)
+const getDatabaseUrl = () => {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.SUPABASE_DATABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL ||
+    'file:./dev.db' // Fallback para desenvolvimento
+  );
+};
+
+// Configurações otimizadas para Vercel Serverless + Supabase + Netlify
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: getDatabaseUrl(),
       },
     },
     // Configurações para ambientes serverless

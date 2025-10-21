@@ -18,15 +18,10 @@ export function PWAManager() {
   const { logoUrl } = useLogo();
 
   useEffect(() => {
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registrado com sucesso:', registration);
-        })
-        .catch((error) => {
-          console.log('Falha ao registrar Service Worker:', error);
-        });
+        .then(reg => console.log('Service Worker registrado com sucesso:', reg))
+        .catch(err => console.error('Falha ao registrar Service Worker:', err));
     }
 
     // Detectar evento de instalação

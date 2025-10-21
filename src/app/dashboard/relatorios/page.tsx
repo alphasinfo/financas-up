@@ -19,6 +19,12 @@ const LazyChart = dynamic(() => import('@/components/lazy-chart').then(mod => mo
   loading: () => <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">Carregando gráficos...</div>
 });
 
+// Lazy load do componente de relatórios
+const RelatorioCompleto = dynamic(() => import('@/components/relatorios/Completo'), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">Carregando relatórios...</div>
+});
+
 interface DadosRelatorio {
   receitasMes: number;
   despesasMes: number;

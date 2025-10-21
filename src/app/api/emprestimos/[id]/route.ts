@@ -139,7 +139,7 @@ export async function DELETE(
     }
 
     // Excluir parcelas primeiro
-    await prisma.parcelaEmprestimo.deleteMany({
+    await prisma.parcelasEmprestimo.deleteMany({
       where: { emprestimoId: params.id },
     });
 

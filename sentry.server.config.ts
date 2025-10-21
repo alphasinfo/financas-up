@@ -1,50 +1,19 @@
+// This file configures the initialization of Sentry on the server.
+// The config you add here will be used whenever the server handles a request.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  
-  // Ajustar sample rate baseado no ambiente
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  
-  // Configurações de ambiente
-  environment: process.env.NODE_ENV,
-  
-  // Ignorar erros conhecidos
-  ignoreErrors: [
-    'ECONNRESET',
-    'ETIMEDOUT',
-    'ENOTFOUND',
-  ],
-  
-  // Filtrar dados sensíveis
-  beforeSend(event, hint) {
-    // Remover variáveis de ambiente sensíveis
-    if (event.extra) {
-      const sanitized = { ...event.extra };
-      ['DATABASE_URL', 'NEXTAUTH_SECRET', 'OPENAI_API_KEY'].forEach(key => {
-        if (sanitized[key]) {
-          sanitized[key] = '***';
-        }
-      });
-      event.extra = sanitized;
-    }
-    
-    // Remover dados sensíveis de contexto
-    if (event.contexts?.runtime?.env) {
-      const env: Record<string, any> = { ...event.contexts.runtime.env };
-      Object.keys(env).forEach(key => {
-        if (key.includes('SECRET') || key.includes('PASSWORD') || key.includes('KEY')) {
-          env[key] = '***';
-        }
-      });
-      event.contexts.runtime.env = env;
-    }
-    
-    return event;
-  },
-  
-  // Integração com performance monitoring
-  integrations: [
-    Sentry.httpIntegration(),
-  ],
+  dsn: "https://f2616fe095e8f31c7ae3e837475cd8b2@o4510221902217216.ingest.us.sentry.io/4510221903331328",
+
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
+
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
+  sendDefaultPii: true,
 });

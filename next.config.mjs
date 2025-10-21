@@ -1,57 +1,42 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  
-  // Configurações para Vercel
-  output: 'standalone',
-  
-  // Otimizações de bundle
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+  // Configurações de ambiente
+  env: {
+    // Mapear variáveis do Netlify/Supabase para as esperadas pela aplicação
+    DATABASE_URL: process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   },
-  
+
+  // Configurações experimentais
   experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-    optimizePackageImports: [
-      'lucide-react',
-      '@radix-ui/react-icons',
-      'chart.js',
-      'react-chartjs-2',
-      '@fullcalendar/react',
-      '@fullcalendar/daygrid',
-    ],
-    // optimizeCss: true, // Desabilitado - requer critters
     scrollRestoration: true,
+    instrumentationHook: true,
   },
-  
-  eslint: {
-    ignoreDuringBuilds: true,
+
+  // Configurações do Webpack
+  webpack: (config, { isServer }) => {
+    // Ignorar avisos de módulos opcionais do Prisma
+    if (isServer) {
+      config.externals.push({
+        '@prisma/client': 'commonjs @prisma/client',
+      });
+    }
+    return config;
   },
-  
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  
-  // Otimizações para produção
-  swcMinify: true,
-  compress: true,
-  optimizeFonts: true,
-  
-  // Configuração de imagens
+
+  // Configurações de imagens
   images: {
-    domains: [],
-    unoptimized: false,
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
-  
-  // Headers de segurança e performance
+
+  // Configurações de headers
   async headers() {
     return [
       {
@@ -59,45 +44,42 @@ const nextConfig = {
         headers: [
           {
             key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+            value: 'on',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY'
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            key: 'X-Frame-Options',
+            value: 'DENY',
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
+            value: 'strict-origin-when-cross-origin',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=()'
-          }
         ],
       },
-      // Removido: Content-Type forçado causava conflito com NextAuth
-      // NextAuth precisa de application/x-www-form-urlencoded no callback
     ];
   },
-  
-  // Remover header x-powered-by
-  poweredByHeader: false,
+
+  // Configurações de redirecionamentos
+  async redirects() {
+    return [
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
+
+  // Configurações de output para Netlify
+  output: process.env.NETLIFY === 'true' ? 'standalone' : undefined,
 };
 
 export default nextConfig;
