@@ -1,11 +1,15 @@
 import {withSentryConfig} from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
-  // Configurações para Vercel
-  output: 'standalone',
-  
+
+  // Detectar plataforma automaticamente
+  ...(process.env.NETLIFY ? {} : {
+    // Configurações específicas para Vercel
+    output: 'standalone',
+  }),
+
   // Otimizações de bundle
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {

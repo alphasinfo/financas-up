@@ -94,7 +94,7 @@ export async function POST(
       const valorAmortizacao = emprestimo.valorParcela - valorJuros;
       const saldoDevedor = emprestimo.valorTotal - (valorAmortizacao * numeroParcela);
       
-      await prisma.parcelaEmprestimo.create({
+      await prisma.parcelasEmprestimo.create({
         data: {
           emprestimoId,
           numeroParcela,

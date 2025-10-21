@@ -1,0 +1,19 @@
+# Configurações para Netlify - Finanças UP
+# Project ID: 78739e1a-1b28-4600-91cc-582750ef911d
+# URL: https://financas-up.netlify.app
+
+# Database - Supabase (já configurado via plugin)
+DATABASE_URL=postgresql://postgres.oqvufceuzwmaztmlhuvh:Alpha124578S1nfo@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=1&pool_timeout=10
+
+# NextAuth Configuration
+NEXTAUTH_SECRET=8Sg4me2Px3VBzR6eeyK+Kjm7sVzdrawgQgK1lKi0Rz4=
+NEXTAUTH_URL=https://financas-up.netlify.app
+
+# Netlify Environment Detection
+NETLIFY=true
+
+# Sentry (opcional - manter compatibilidade)
+# SENTRY_DSN=
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=https://financas-up.netlify.app

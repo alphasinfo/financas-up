@@ -1,31 +1,110 @@
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Carregar especificamente .env.local para desenvolvimento
+const envLocalPath = path.resolve('.env.local');
+console.log(`🔍 Carregando .env.local de: ${envLocalPath}`);
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+  console.log('✅ .env.local carregado');
+} else {
+  console.log('❌ .env.local não encontrado, usando .env');
+  dotenv.config({ path: path.resolve('.env') });
+}
+
+console.log(`🔍 DATABASE_URL atual: ${process.env.DATABASE_URL}`);
+
+// Forçar SQLite para desenvolvimento local
+process.env.DATABASE_URL = 'file:./dev.db';
+console.log(`🔧 DATABASE_URL forçada para: ${process.env.DATABASE_URL}`);
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
-  // Limpar dados existentes
-  await prisma.transacao.deleteMany();
-  await prisma.parcelaEmprestimo.deleteMany();
-  await prisma.emprestimo.deleteMany();
-  await prisma.investimento.deleteMany();
-  await prisma.orcamento.deleteMany();
-  await prisma.meta.deleteMany();
-  await prisma.conciliacao.deleteMany();
-  await prisma.pagamentoFatura.deleteMany();
-  await prisma.fatura.deleteMany();
-  await prisma.cartaoCredito.deleteMany();
-  await prisma.contaBancaria.deleteMany();
-  await prisma.categoria.deleteMany();
-  await prisma.usuario.deleteMany();
+  // Detectar tipo de banco baseado na DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL;
+  console.log(`🔍 DATABASE_URL: ${databaseUrl}`);
+  const dbType = databaseUrl && databaseUrl.includes('postgresql://') ? 'postgresql' : 'sqlite';
+  console.log(`🔍 Detectado banco: ${dbType}`);
+
+  // Para SQLite, deletar o arquivo do banco para forçar recriação com schema atual
+  if (dbType === 'sqlite') {
+    const fs = require('fs');
+    const dbFile = './dev.db';
+    if (fs.existsSync(dbFile)) {
+      fs.unlinkSync(dbFile);
+      console.log('🗑️ Banco SQLite antigo removido');
+    }
+  }
+
+  // Verificar se as tabelas existem antes de limpar
+  let tabelas;
+  if (dbType === 'postgresql') {
+    tabelas = await prisma.$queryRaw<Array<{ name: string }>>`
+      SELECT table_name as name FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    `;
+  } else {
+    tabelas = await prisma.$queryRaw<Array<{ name: string }>>`
+      SELECT name FROM sqlite_schema WHERE type='table'
+    `;
+  }
+
+  if (tabelas.some(t => t.name === 'Transacao')) {
+    await prisma.transacao.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'ParcelaEmprestimo')) {
+    await prisma.parcelasEmprestimo.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Emprestimo')) {
+    await prisma.emprestimo.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Investimento')) {
+    await prisma.investimento.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Orcamento')) {
+    await prisma.orcamento.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Meta')) {
+    await prisma.meta.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Conciliacao')) {
+    await prisma.conciliacao.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'PagamentoFatura')) {
+    await prisma.pagamentoFatura.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Fatura')) {
+    await prisma.fatura.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'CartaoCredito')) {
+    await prisma.cartaoCredito.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'ContaBancaria')) {
+    await prisma.contaBancaria.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Categoria')) {
+    await prisma.categoria.deleteMany();
+  }
+  if (tabelas.some(t => t.name === 'Usuario')) {
+    await prisma.usuario.deleteMany();
+  }
 
   // Criar usuário de teste
   const senhaHash = await hash('123456', 12);
   
-  const usuario = await prisma.usuario.create({
-    data: {
+  const usuario = await prisma.usuario.upsert({
+    where: { email: 'teste@financasup.com' },
+    update: {
+      nome: 'Usuário Teste',
+      senha: senhaHash,
+    },
+    create: {
       nome: 'Usuário Teste',
       email: 'teste@financasup.com',
       senha: senhaHash,
@@ -523,19 +602,20 @@ async function main() {
   // Criar empréstimo para testar Bug #9
   const emprestimo = await prisma.emprestimo.create({
     data: {
-      descricao: 'Empréstimo Pessoal',
+      instituicao: "Banco do Brasil",
+      descricao: "Empréstimo Pessoal",
       valorTotal: 10000,
       valorParcela: 1000,
       numeroParcelas: 10,
       parcelasPagas: 2,
       taxaJurosMensal: 2.5,
       taxaJurosAnual: 34.49,
-      sistemaAmortizacao: 'PRICE',
-      dataContratacao: new Date('2025-08-01'),
+      sistemaAmortizacao: "PRICE",
+      dataContratacao: new Date("2025-08-01T00:00:00.000Z"),
       diaVencimento: 15,
-      instituicao: 'Banco do Brasil',
+      status: "ATIVO",
       usuarioId: usuario.id,
-    },
+    }
   });
 
   // Criar parcelas do empréstimo
@@ -547,7 +627,7 @@ async function main() {
     const valorJuros = saldoDevedor * 0.025; // 2.5% ao mês
     const valorAmortizacao = 1000 - valorJuros;
     
-    await prisma.parcelaEmprestimo.create({
+    await prisma.parcelasEmprestimo.create({
       data: {
         numeroParcela: i,
         numero: i,

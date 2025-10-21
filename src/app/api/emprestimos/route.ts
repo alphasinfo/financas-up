@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       });
     }
 
-    await prisma.parcelaEmprestimo.createMany({
+    await prisma.parcelasEmprestimo.createMany({
       data: parcelas,
     });
 
