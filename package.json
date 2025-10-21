@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/configure-prisma.js && prisma generate && next build",
+    "build": "node scripts/configure-prisma-netlify.js && prisma generate && next build",
     "build:netlify": "node scripts/build-netlify.js",
+    "build:local": "node scripts/configure-prisma.js && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
