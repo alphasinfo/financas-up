@@ -27,21 +27,6 @@ export default function LoginPage() {
     try {
       console.log('🔐 Tentando login com:', email);
       
-      // Verificar rate limiting
-      const rateLimitCheck = await fetch('/api/auth/check-rate-limit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      
-      const rateLimitData = await rateLimitCheck.json();
-      
-      if (rateLimitData.blocked) {
-        setErro(rateLimitData.message);
-        setCarregando(false);
-        return;
-      }
-      
       // Tentar com NextAuth
       const resultado = await signIn("credentials", {
         email,
@@ -53,31 +38,9 @@ export default function LoginPage() {
 
       if (resultado?.error) {
         console.error('❌ Erro no login:', resultado.error);
-        
-        // Registrar falha no rate limiter
-        await fetch('/api/auth/check-rate-limit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, action: 'record-failure' }),
-        });
-        
-        const info = rateLimitData.info;
-        const remaining = Math.min(info?.ipRemaining || 5, info?.emailRemaining || 3);
-        
-        if (remaining <= 2) {
-          setErro(`Email ou senha inválidos. Você tem mais ${remaining} tentativa(s) antes de ser bloqueado.`);
-        } else {
-          setErro("Email ou senha inválidos. Verifique suas credenciais.");
-        }
+        setErro("Email ou senha inválidos. Verifique suas credenciais.");
       } else if (resultado?.ok) {
         console.log('✅ Login bem-sucedido!');
-        
-        // Limpar tentativas no rate limiter
-        await fetch('/api/auth/check-rate-limit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, action: 'clear' }),
-        });
         
         // Salvar preferência de manter logado no localStorage
         if (manterLogado) {
