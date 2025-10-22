@@ -16,7 +16,18 @@ if (!process.env.NETLIFY) {
   process.exit(0);
 }
 
-const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
+// Caminho mais robusto - subir até a raiz do projeto
+// __dirname é scripts/database, então subir 2 níveis: ../..
+const schemaPath = path.resolve(__dirname, '..', '..', 'prisma', 'schema.prisma');
+
+console.log('📁 Procurando schema em:', schemaPath);
+
+// Verificar se o arquivo existe
+if (!fs.existsSync(schemaPath)) {
+  console.error('❌ Schema não encontrado em:', schemaPath);
+  console.error('📂 Conteúdo do diretório prisma:', fs.readdirSync(path.dirname(schemaPath)));
+  process.exit(1);
+}
 
 // Ler schema atual
 let schema = fs.readFileSync(schemaPath, 'utf8');

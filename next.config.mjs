@@ -24,6 +24,9 @@ const nextConfig = {
     instrumentationHook: true,
   },
 
+  // Configurações para resolver problemas de Server Components no Vercel
+  transpilePackages: ['@sentry/nextjs'],
+
   // Configurações do Webpack
   webpack: (config, { isServer }) => {
     // Ignorar avisos de módulos opcionais do Prisma
