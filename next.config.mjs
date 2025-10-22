@@ -21,7 +21,7 @@ const nextConfig = {
   // Configurações experimentais
   experimental: {
     scrollRestoration: true,
-    instrumentationHook: true,
+    // instrumentationHook: true,
   },
 
   // Configurações para resolver problemas de Server Components no Vercel

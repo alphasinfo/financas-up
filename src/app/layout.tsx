@@ -64,8 +64,7 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             <LogoProvider>
-              {/* Temporariamente removido PWAManager para resolver erro Vercel */}
-              {/* <PWAManager /> */}
+              <PWAManager />
               {children}
               {/* Removed Vercel analytics to avoid ad blockers */}
             </LogoProvider>

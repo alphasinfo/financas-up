@@ -37,3 +37,59 @@
 {"timestamp":"2025-10-22T19:29:20.349Z","level":"INFO","message":"Initialized 4 default user segments"}
 {"timestamp":"2025-10-22T19:29:20.350Z","level":"INFO","message":"Notification scheduler started"}
 {"timestamp":"2025-10-22T19:29:20.346Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:08:25.048Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:08:25.061Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:08:25.066Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:08:25.066Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:08:27.946Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:08:27.949Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:08:27.950Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:08:27.949Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:11:31.111Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:11:31.115Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:11:31.116Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:11:31.126Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:11:34.111Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:11:34.115Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:11:34.119Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:11:34.121Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:13:38.160Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:13:38.179Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:13:38.183Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:13:38.184Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:13:41.171Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:13:41.181Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:13:41.186Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:13:41.187Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:15:05.349Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:15:05.374Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:15:05.376Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:15:05.384Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:15:08.567Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:15:08.572Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:15:08.573Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:15:08.580Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:17:17.603Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:17:17.608Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:17:17.609Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:17:17.637Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:17:20.972Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:17:20.977Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:17:20.978Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:17:20.976Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:19:06.020Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:19:06.037Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:19:06.050Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:19:06.051Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:19:09.086Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:19:09.091Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:19:09.092Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:19:09.094Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:22:21.380Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:22:21.385Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:22:21.380Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:22:21.386Z","level":"INFO","message":"Notification scheduler started"}
+{"timestamp":"2025-10-22T20:22:24.483Z","level":"INFO","message":"Initialized 4 default notification templates"}
+{"timestamp":"2025-10-22T20:22:24.485Z","level":"INFO","message":"Initialized 4 external integrations"}
+{"timestamp":"2025-10-22T20:22:24.488Z","level":"INFO","message":"Initialized 4 default user segments"}
+{"timestamp":"2025-10-22T20:22:24.489Z","level":"INFO","message":"Notification scheduler started"}
