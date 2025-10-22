@@ -3,7 +3,7 @@
  * Testa configurações de rate limiting sem depender de NextRequest
  */
 
-import { RATE_LIMITS } from '../lib/rate-limit';
+import { RATE_LIMITS } from '../../src/lib/rate-limit';
 
 describe('Middleware - Rate Limiting Configuration', () => {
   describe('RATE_LIMITS', () => {

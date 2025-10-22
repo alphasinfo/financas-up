@@ -44,7 +44,7 @@ class MonitoringService {
     };
 
     this.metrics.push(metric);
-    
+
     // Manter apenas os últimos N métricas
     if (this.metrics.length > this.MAX_METRICS) {
       this.metrics = this.metrics.slice(-this.MAX_METRICS);
@@ -55,8 +55,8 @@ class MonitoringService {
       console.log(`[PERF] ${operation}: ${duration}ms`, { success, metadata });
     }
 
-    // Alertar se performance está ruim
-    if (duration > 5000) {
+    // Alertar se performance está ruim (suprimido durante testes)
+    if (duration > 5000 && process.env.NODE_ENV !== 'test') {
       console.warn(`[SLOW] ${operation} took ${duration}ms`);
     }
   }
@@ -79,27 +79,29 @@ class MonitoringService {
     };
 
     this.errors.push(errorMetric);
-    
+
     // Manter apenas os últimos N erros
     if (this.errors.length > this.MAX_ERRORS) {
       this.errors = this.errors.slice(-this.MAX_ERRORS);
     }
 
-    // Log detalhado do erro
-    console.error(`[ERROR] ${error.message}`, {
-      stack: error.stack,
-      context,
-      userId,
-      ip,
-      timestamp: errorMetric.timestamp,
-    });
+    // Log detalhado do erro (suprimido durante testes)
+    if (process.env.NODE_ENV !== 'test') {
+      console.error(`[ERROR] ${error.message}`, {
+        stack: error.stack,
+        context,
+        userId,
+        ip,
+        timestamp: errorMetric.timestamp,
+      });
+    }
   }
 
   /**
    * Obter estatísticas de performance
    */
   static getPerformanceStats(operation?: string) {
-    const filteredMetrics = operation 
+    const filteredMetrics = operation
       ? this.metrics.filter(m => m.operation === operation)
       : this.metrics;
 
@@ -109,7 +111,7 @@ class MonitoringService {
 
     const durations = filteredMetrics.map(m => m.duration);
     const successCount = filteredMetrics.filter(m => m.success).length;
-    
+
     return {
       operation,
       count: filteredMetrics.length,
@@ -158,7 +160,7 @@ class MonitoringService {
   static getHealthCheck() {
     const stats = this.getPerformanceStats();
     const errorStats = this.getErrorStats();
-    
+
     const isHealthy = (
       (stats?.successRate || 100) > 95 &&
       (stats?.avgDuration || 0) < 2000 &&
@@ -180,7 +182,7 @@ class MonitoringService {
    */
   static cleanup() {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h atrás
-    
+
     this.metrics = this.metrics.filter(m => m.timestamp >= cutoff);
     this.errors = this.errors.filter(e => e.timestamp >= cutoff);
   }
@@ -213,7 +215,7 @@ export function trackPerformance(operation: string) {
     descriptor.value = async function (...args: any[]) {
       const start = Date.now();
       let success = true;
-      
+
       try {
         const result = await method.apply(this, args);
         return result;

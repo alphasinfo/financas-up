@@ -32,13 +32,25 @@ const nextConfig = {
         '@prisma/client': 'commonjs @prisma/client',
       });
     }
+
+    // Suprimir warnings críticos de dependências do Prisma/OpenTelemetry
+    config.ignoreWarnings = [
+      /Critical dependency: the request of a dependency is an expression/,
+      /Critical dependency: require function is used in a way in which dependencies cannot be statically extracted/,
+    ];
+
     return config;
   },
 
-  // Configurações de imagens
+  // Configurações de imagens (usando remotePatterns em vez de domains)
   images: {
-    domains: ['localhost'],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: '**',

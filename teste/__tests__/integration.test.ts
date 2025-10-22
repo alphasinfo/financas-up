@@ -171,20 +171,20 @@ describe('🔍 TESTE DE INTEGRAÇÃO COMPLETO', () => {
     });
 
     it('deve importar cache corretamente', async () => {
-      const { cache } = await import('../lib/cache');
+      const { cache } = await import('../../src/lib/cache');
       expect(cache).toBeDefined();
       expect(typeof cache.get).toBe('function');
       expect(typeof cache.set).toBe('function');
     });
 
     it('deve importar formatters corretamente', async () => {
-      const { formatarMoeda, formatarData } = await import('../lib/formatters');
+      const { formatarMoeda, formatarData } = await import('../../src/lib/formatters');
       expect(typeof formatarMoeda).toBe('function');
       expect(typeof formatarData).toBe('function');
     });
 
     it('deve importar rate-limit corretamente', async () => {
-      const { rateLimit } = await import('../lib/rate-limit');
+      const { rateLimit } = await import('../../src/lib/rate-limit');
       expect(typeof rateLimit).toBe('function');
     });
   });
@@ -227,12 +227,11 @@ describe('🔍 TESTE DE INTEGRAÇÃO COMPLETO', () => {
       const path = require('path');
 
       const docs = [
-        'README.md',
-        'docs/README.md',
-        'docs/API.md',
-        'docs/DATABASE.md',
-        'docs/SCRIPTS.md',
-        'docs/TESTES.md',
+        'Documentos/Modo-de-usar/INDICE-DOCUMENTACAO.md',
+        'Documentos/DocumentosTecnicos/05-ARQUITETURA-TECNICA.md',
+        'Documentos/DocumentosTecnicos/06-APIS-ENDPOINTS.md',
+        'Documentos/DocumentosTecnicos/DATABASE.md',
+        'teste/DOCUMENTACAO-TESTES.md',
       ];
 
       docs.forEach(doc => {
@@ -246,9 +245,9 @@ describe('🔍 TESTE DE INTEGRAÇÃO COMPLETO', () => {
     it('deve carregar bibliotecas rapidamente', async () => {
       const inicio = Date.now();
       
-      await import('../lib/formatters');
-      await import('../lib/cache');
-      await import('../lib/rate-limit');
+      await import('../../src/lib/formatters');
+      await import('../../src/lib/cache');
+      await import('../../src/lib/rate-limit');
       
       const fim = Date.now();
       const tempo = fim - inicio;
@@ -260,7 +259,7 @@ describe('🔍 TESTE DE INTEGRAÇÃO COMPLETO', () => {
 
   describe('8. Teste de Funcionalidades Principais', () => {
     it('deve formatar moeda corretamente', async () => {
-      const { formatarMoeda } = await import('../lib/formatters');
+      const { formatarMoeda } = await import('../../src/lib/formatters');
       
       const resultado1 = formatarMoeda(1000);
       const resultado2 = formatarMoeda(1500.50);
@@ -272,14 +271,14 @@ describe('🔍 TESTE DE INTEGRAÇÃO COMPLETO', () => {
     });
 
     it('deve fazer cache corretamente', async () => {
-      const { cache } = await import('../lib/cache');
+      const { cache } = await import('../../src/lib/cache');
       
       cache.set('teste', 'valor', 1000);
       expect(cache.get('teste')).toBe('valor');
     });
 
     it('deve validar rate limit', async () => {
-      const { rateLimit } = await import('../lib/rate-limit');
+      const { rateLimit } = await import('../../src/lib/rate-limit');
       
       const result = rateLimit('test-key', {
         interval: 60000,

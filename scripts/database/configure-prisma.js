@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
+const schemaPath = path.join(__dirname, '..', '..', 'prisma', 'schema.prisma');
 
 // Lista de possíveis arquivos .env em ordem de prioridade
 const envFiles = ['.env.local', '.env', '.env.production'];
@@ -11,7 +11,7 @@ let databaseUrl = null;
 let envFileUsed = null;
 
 for (const envFile of envFiles) {
-  const envPath = path.join(__dirname, '..', envFile);
+  const envPath = path.join(__dirname, '..', '..', envFile);
   console.log(`🔍 Verificando ${envFile}: ${envPath}`);
   try {
     if (fs.existsSync(envPath)) {

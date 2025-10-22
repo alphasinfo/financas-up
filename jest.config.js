@@ -16,17 +16,22 @@ const customJestConfig = {
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
-    '!src/**/__tests__/**',
   ],
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
+    'teste/**/*.[jt]s?(x)',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   transformIgnorePatterns: [
     '/node_modules/',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.test.json'
+    }
+  }
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

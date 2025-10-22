@@ -26,8 +26,10 @@ class ProductionSafeLogger {
   }
 
   error(...args: any[]) {
-    // Errors sempre aparecem
-    console.error(...args);
+    // Errors sempre aparecem (exceto durante testes)
+    if (process.env.NODE_ENV !== 'test') {
+      console.error(...args);
+    }
   }
 
   debug(...args: any[]) {
